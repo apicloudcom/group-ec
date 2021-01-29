@@ -1,0 +1,73 @@
+<template>
+    <view class="order-goods-page">
+        <view class="order-goods-item" v-for="(item,index) in this.props.dataList" data-index={index} onclick="onclick">
+            <image class="order-goods-img" src={item.image} mode="aspectFit"></image>
+            <view class="order-goods-right">
+                <text class="order-goods-title">{item.title}</text>
+                <view class="order-goods-guige-box">
+                    <text class="order-goods-guige">{item.key ? ' '+item.key : '默认规格'}</text>
+                    <text class="order-goods-num">{'x'+(item.buynum||item.tuinum)}</text>
+                </view>
+				<view class="order-goods-bottom">
+					<text class="order-goods-price">{'¥' + (item.act=='buy'?item.delprice:item.price)}</text>
+				</view>
+            </view>
+        </view>
+    </view>
+</template>
+<script>
+	export default {
+		name: 'order-goods',
+		methods: {
+            onclick(e){
+				let index = e.currentTarget.dataset.index;
+				let userInfo = this.props.userInfo;
+                this.fire('itemClick', {index, userInfo});
+			}
+		}
+	}
+</script>
+<style scoped>
+.order-goods-page{
+    background-color: white;
+}
+.order-goods-item{
+	flex-direction: row;
+	padding-bottom: 15px;
+	margin: 15px 15px 0;
+	border-bottom: 1px solid #f8f8f8;
+}
+.order-goods-img{
+    width: 68px;
+    height: 68px;
+	margin-right: 12px;
+	border-radius: 4px;
+}
+.order-goods-right{
+	align-content: center;
+	flex: 1;
+}
+.order-goods-title{
+	font-size: 14px;
+	color: #333333;
+}
+.order-goods-guige-box{
+	flex-direction: row;
+	justify-content: space-between;
+	margin-top: 5px;
+}
+.order-goods-guige,.order-goods-num{
+	font-size: 12px;
+	color: #999999;
+}
+.order-goods-bottom{
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+	margin-top: 10px;
+}
+.order-goods-price{
+	font-size: 14px;
+	color: #FE904A;
+}    
+</style>

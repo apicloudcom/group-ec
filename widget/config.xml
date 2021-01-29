@@ -1,0 +1,67 @@
+ <widget id="A6166594107009"  version="0.0.1">
+
+    <name>拼团商城</name>
+
+    <description>
+
+        Example For APICloud.
+
+    </description>
+
+    <author email="developer@apicloud.com" href="http://www.apicloud.com">
+
+        Developer
+
+    </author>
+
+    <content src="config.json" />
+
+    <access origin="*" />
+
+    <preference name="pageBounce" value="false"/>
+
+	<preference name="appBackground" value="rgba(0,0,0,0.0)"/>
+
+	<preference name="windowBackground" value="#fff"/>
+
+	<preference name="frameBackgroundColor" value="rgba(0,0,0,0.0)"/>
+
+	<preference name="hScrollBarEnabled" value="false"/>
+
+	<preference name="vScrollBarEnabled" value="false"/>
+
+	<preference name="autoLaunch" value="true"/>
+
+	<preference name="fullScreen" value="false"/>
+
+	<preference name="autoUpdate" value="true" />
+
+	<preference name="smartUpdate" value="false" />
+
+	<preference name="debug" value="true"/>
+
+	<preference name="statusBarAppearance" value="true"/>
+
+	<permission name="readPhoneState" />
+
+	<permission name="camera" />
+
+	<permission name="record" />
+
+	<permission name="location" />
+
+	<permission name="fileSystem" />
+
+	<permission name="internet" />
+
+	<permission name="bootCompleted" />
+
+	<permission name="hardware" />
+
+	<feature name="wxPlus">
+		<param name="urlScheme" value=""/>
+		<param name="apiKey" value=""/>
+		<param name="apiSecret" value=""/>
+		<param name="universalLink" value=""/>
+	</feature>
+</widget>

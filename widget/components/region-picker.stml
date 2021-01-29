@@ -1,0 +1,102 @@
+<template>
+	<picker class="region-picker" mode="multiSelector" range={dataList} range-key={valueKey} value={selectValue} onchange="onselectchange" oncolumnchange="onselectcolumnchange">
+		<text style={'color:'+(this.props.region?'#333;':'#ccc;')}>{this.props.region || '请选择'}</text>
+	</picker>
+</template>
+<script>
+import citys from "../utils/city.js";
+export default {
+	name: 'region-picker',
+	data() {
+		return{
+            valueKey: 'label',
+            codeKey: 'value',
+            selectValue: [0,0,0],
+            dataList: []
+		}
+	},
+	methods: {
+		installed(){
+            let values = [0, 0, 0];
+            if (this.props.region) {
+                let names = this.props.region.split(',');
+                if (names.length == 3) {
+                    var component0 = citys;
+                    for (var i=0;i<component0.length;i++) {
+                        if (names[0] == component0[i][this.data.valueKey]) {
+                            values[0] = i;
+                            break;
+                        }
+                    }
+                    var component1 = component0[values[0]]['children'];
+                    for (var i=0;i<component1.length;i++) {
+                        if (names[1] == component1[i][this.data.valueKey]) {
+                            values[1] = i;
+                            break;
+                        }
+                    }
+                    var component2 = component1[values[1]]['children'];
+                    for (var i=0;i<component2.length;i++) {
+                        if (names[2] == component2[i][this.data.valueKey]) {
+                            values[2] = i;
+                            break;
+                        }
+                    }
+                }
+            }
+			this.initDataList(values);
+            this.data.selectValue = values;
+		},
+        initDataList(values) {
+            var component0 = citys;
+            var component1 = component0[values[0]]['children'];
+            var component2 = component1[values[1]]['children'];
+            var dataList = [component0, component1];
+            if (component2) {
+                dataList[2] = component2;
+            } else {
+                dataList[2] = [];
+            }
+            this.data.dataList = dataList;
+        },
+        onselectchange(e) {
+            var value = e.detail.value;
+            this.data.selectValue = value;
+            var region = [];
+            var code = [];
+            for (var i=0;i<value.length;i++) {
+                var index = value[i];
+                var list = this.data.dataList[i];
+                if (list.length > index) {
+                    region.push(list[index][this.data.valueKey]);
+                    code.push(list[index][this.data.codeKey]);
+                }
+            }
+            this.fire('change', {value:region, code:code});
+        },
+        onselectcolumnchange(e) {
+            var column = e.detail.column;
+            if (column == this.data.dataList.length-1) {
+                return;
+            }
+            var value = e.detail.value;
+            var selectValue = this.data.selectValue;
+            selectValue[column] = value;
+            if (column == 0) {
+                selectValue[1] = 0;
+                selectValue[2] = 0;
+            } else if (column == 1) {
+                selectValue[2] = 0;
+            }
+            this.initDataList(selectValue);
+        }
+	}
+}
+</script>
+<style>
+.region-picker{
+	flex-direction: row;
+	justify-content: flex-end;
+	align-items: center;
+}
+</style>

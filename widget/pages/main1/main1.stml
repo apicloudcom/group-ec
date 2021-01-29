@@ -1,0 +1,473 @@
+<template>
+    <scroll-view class="page" scroll-y enable-back-to-top refresher-enabled refresher-triggered={refresherTriggered} onrefresherrefresh="onrefresherrefresh">
+		<!-- 搜索 -->
+		<view class="search_container">
+			<view class="search_box" onclick="openSearch">
+				<image class="search_img" src="../../images/main1/search.png"></image>
+				<text class="search_zi">请输入商品名称</text>
+			</view>		
+		</view>
+	    <!-- banner -->
+		<view class="banner_box" style={'height:'+swiperHeight+'px;'}>
+			<swiper class="banner_swiper" circular autoplay onchange="fnSwiperChange">
+				<swiper-item v-for="(item_, index_) in bannerList">
+					<image class="banner_img" src={item_.icon} mode="aspectFill" onclick="fnBannerPage" data-index={index_}></image>
+				</swiper-item>
+			</swiper>
+			<view class="banner_dots">
+				<view v-for="(item, index) in bannerList" class={current == index ? 'banner_dot-on' : 'banner_dot'}></view>
+			</view>
+		</view>	
+		<!-- 拼团成功信息 -->
+        <view>
+            <view class="pin_box" v-if={tshow} onclick="fnOpenGoodsDetails" data-id={tshow.goodsid}>
+                <image class="pin_logo" src={tshow.user.avatar} policy="cache_only" mode="aspectFill"></image>
+                <text class="pin_uname">{$filter.nameHash(tshow.user.nickname)} 拼团成功</text>
+                <view class="flex1"></view>
+                <text class="pin_time">{$filter.dateFormat(tshow.paytime)}</text>
+            </view>
+        </view>
+		<!-- 分类 -->
+		<view class="classinfo_box">
+			<view v-for="(item,index) in classData" class="classinfo_one" onclick="fnOpenClassPage" data-id={item.id}>
+				<image class="classinfo_img" src={item.icon}></image>
+				<text class="classinfo_zi">{item.name}</text>
+			</view>
+		</view>
+		<!-- 活动、推荐专区 -->
+        <view class="zone_box" v-for="(good, index) in goodsList">
+            <view class="common_tit">
+                <text class="common_zi">{good.name}</text>
+                <view class="flex1"></view>
+				<view class="common_morebtn" onclick="fnOpenMoreZonePage" data-type={good.key} data-name={good.name}>
+					<text class="common_more">更多</text>
+					<image class="common_img" src="../../images/main1/gor.png"></image>
+				</view>
+            </view>
+            <!-- list -->
+            <view class="list_box" v-if={index==0}>
+				<list-item v-for="(item) in good.data" item={item} showHot onitemClick="fnOpenDetails"></list-item>
+            </view>
+            <view class="list_box" v-else>
+				<list-item v-for="(item) in good.data" item={item} showHot onitemClick="fnOpenDetails"></list-item>
+            </view>
+        </view>		
+    </scroll-view>
+</template>
+<script>
+	import $util from '../../utils/util.js'
+	import $filter from '../../utils/filter.js'
+	import '../../components/list-item.stml'
+	import '../../components/grid-item.stml'
+	export default {
+		name: 'main1',
+		data() {
+			return{
+				refresherTriggered: false,
+				bannerList: [],
+				current: 0,
+				classData: [],
+				goodsList: [],
+				tlist: [],		// 成团信息
+				tshow: null,	// 展示的成团信息
+				tindex: 0		// 展示成团信息索引
+			}
+		},
+		computed:{
+			swiperHeight(){
+				return Math.floor((api.winWidth - 30)*0.4+20);
+			},
+			gridWidth(){
+				return Math.floor((api.winWidth - 30 - 12)/2);
+			}
+		},
+		methods: {
+			apiready(){
+				this.getIndexData(true);
+				this.getTuanlist();
+
+				api.addEventListener({
+					name:'appintent'
+				}, function(ret){
+					let tuanid = ret.appParam.tuanid;
+					let uid = ret.appParam.uid;
+					if (tuanid && uid) {
+						$util.openWin({
+							name: 'group'+tuanid,
+							url: '../group/group.stml',
+							title: '分享',
+							pageParam: {
+								tuanid: tuanid,
+								uid: uid
+							}
+						});
+					}
+				});
+
+				api.addEventListener({
+					name:'tabitembtn'
+				}, function(ret){
+					var hideNavigationBar = ret.index == 2;
+					api.setTabLayoutAttr({
+						hideNavigationBar: hideNavigationBar,
+						animated: false
+					});
+					api.setTabBarAttr({
+						index: ret.index
+					});
+				});
+
+				if ($util.isApp()) {
+					api.setStatusBarStyle({
+						style: 'dark'
+					});
+				}
+			},
+
+			openSearch(){
+				$util.openWin({
+					name: 'search',
+					url: '../search/search.stml',
+					title: '搜索结果'
+				});
+			},
+
+			fnOpenClassPage(e){
+				let id = e.currentTarget.dataset.id;
+				this.openClassPage(id);
+			},
+
+			openClassPage(classId){
+				api.setPrefs({
+					key: 'classId',
+					value: classId
+				});
+				if ($util.isMp()) {
+					wx.switchTab({
+						url: '/pages/main2/main2'
+					});
+				} else {
+					api.setTabBarAttr({
+						index: 1
+					});
+				}
+			},
+
+			/**
+			 * 页面相关事件处理函数--监听用户下拉动作
+			 */
+			onrefresherrefresh() {
+				this.data.refresherTriggered = true;
+				this.getIndexData(false);
+			},
+
+			/**
+			 * 滑块改变事件
+			 * */ 
+			fnSwiperChange(e){
+				this.data.current = e.detail.current;
+			},
+
+			/***
+			 * 首页数据分类 banner
+			 * */ 
+			getIndexData(showProgress){
+				if (showProgress) {
+					$util.showProgress();
+				}
+				let that = this;
+				let url = "homes/getIndexData";
+				$util.ajax({
+					url: url
+				}, function(res, err){
+					if (res) {
+						// console.log(JSON.stringify(res));
+						if (res.errcode == 0) {
+							that.data.bannerList = res.data.banner;
+							that.data.classData = res.data.classData.slice(0, 4);
+							that.data.goodsList = res.data.goods;
+						} else {
+							$util.toast(res.msg);
+						}
+					} else {
+						$util.toast('网络错误');
+					}
+					if (showProgress) {
+						$util.hideProgress();
+					}
+					that.data.refresherTriggered = false;
+				});
+			},
+
+			// 成团列表
+			getTuanlist(){
+				$util.ajax({
+					url: 'homes/getTuanlist?page=1'
+				}, (res, err)=>{
+					if (res && res.errcode == 0){
+						let tlist = res.data;
+						if (tlist.length > 0) {
+							this.data.tlist = tlist;
+							this.fnShowTlist();
+						}
+					}
+				});
+			},
+
+			// 成团展示
+			fnShowTlist(){
+				let tlist = this.data.tlist;
+				if (tlist.length > this.data.tindex) {
+					this.data.tshow = tlist[this.data.tindex];
+					this.data.tindex += 1;
+					setTimeout(()=>{
+						this.fnShowTlist();
+					}, 5000);
+				} else {
+					this.data.tindex = 0;
+					this.getTuanlist();
+				}
+			},
+
+			/***
+			 * banner 跳转
+			 * */ 
+			fnBannerPage: function(e){
+				let list = this.data.bannerList;
+				let obj = list[e.currentTarget.dataset.index];
+				if (obj.type == 'class') {
+					this.openClassPage(obj.classid);
+				} else if (obj.type == 'top') {
+					let goods = this.data.goodsList;
+					let name = {};
+					for (let i in goods) {
+						name[goods[i]['key']] = goods[i].name
+					}
+					let topid = obj.topid;
+					this.openZonePage(topid, name[topid]);
+				} else if (obj.type == 'item') {
+					this.openDetailWin(obj.goodsid);
+				}
+			},
+
+			fnOpenMoreZonePage(e){
+				let data = e.currentTarget.dataset;
+				this.openZonePage(data.type, data.name);
+			},
+
+			openZonePage(type, name) {
+				let url = '../zone/zone.stml';
+				$util.openWin({
+					name: 'zone',
+					url: url,
+					title: name,
+					pageParam: {
+						type: type,
+						title: name
+					}
+				});
+			},
+
+			/***
+			 * 商品详情
+			 * */ 
+			fnOpenDetails(e){
+				let id = e.detail.id;
+				this.openDetailWin(id);
+			},
+
+			fnOpenGoodsDetails(e){
+				let id = e.currentTarget.dataset.id;
+				this.openDetailWin(id);
+			},
+
+			openDetailWin(id){
+                $util.openWin({
+                    name: 'detail-'+id,
+                    url: '../details/details.stml',
+					title: '商品详情',
+					pageParam: {
+						id: id
+					}
+                });
+			},
+
+			/**
+			 * 用户点击右上角分享
+			 */
+			onShareAppMessage: function () {}
+		}
+	}
+</script>
+<style>
+.page {
+	height: 100%;
+}
+
+/* search */
+.search_container{
+	justify-content: center;
+	height: 44px;
+	padding: 0 15px;
+	background-color: #fff;
+	border-bottom: 1px solid #f8f8f8;
+}
+.search_box{
+	flex-direction: row;
+    align-items: center;
+    height: 30px;
+    background-color: #F5F5F5;
+    border-radius: 15px;
+}
+.search_img{
+    width: 12px;
+    height: 12px;
+    margin-left: 13px;
+    margin-right: 6px;
+}
+.search_zi{
+    color: #B5B5B5;
+    font-size: 12px;
+    line-height: 17px;
+}
+
+/* banner */
+.banner_box{
+	margin: 10px 15px;
+	background-color: #fff;
+	box-shadow: 0 0 5px #f9f9f9;
+}
+.banner_swiper{
+    height: 100%;
+    border-radius: 6px;
+}
+.banner_img{
+    width: 100%;
+    height: 100%;
+}
+.banner_dots{
+	flex-direction: row;
+	justify-content: center;
+    width: 100%;
+    height: 4px;
+    position: absolute;
+    bottom: 6px;
+}
+.banner_dot{
+    width: 4px;
+    height: 100%;
+    background-color: rgba(255,255,255,0.4);
+    border-radius: 2px;
+    margin: 0 2px;
+}
+.banner_dot-on{
+    width: 15px;
+    height: 100%;
+    background-color: rgba(255,255,255,1);
+    border-radius: 2px;
+    margin: 0 2px;
+}
+
+/* pintuan */
+.pin_box{
+	flex-direction: row;
+    align-items: center;
+    height: 45px;
+}
+
+.pin_logo{
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    margin-left: 18px;
+    margin-right: 6px;
+}
+
+.pin_uname{
+    font-size: 12px;
+}
+
+.pin_time{
+    font-size: 12px;
+    margin-right: 18px;
+}
+
+/* 分类 */
+.classinfo_box{
+	flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    height: 106px;
+	background-color: #fff;
+}
+
+.classinfo_one{
+    width: 50px;
+    height: 100%;
+}
+
+.classinfo_img{
+    width: 50px;
+    height: 50px;
+    margin: 16px auto 8px;
+}
+
+.classinfo_zi{
+    text-align: center;
+    line-height: 17px;
+    height: 17px;
+    font-size: 12px;
+    color: #666666;
+}
+
+/* common title */
+.zone_box{
+	box-shadow: 0 -3px 5px 2px #f9f9f9;
+}
+
+.common_tit{
+	flex-direction: row;
+    align-items: center;
+    margin-top: 5px;
+	padding: 15px;
+	background-color: #fff;
+}
+
+.common_zi{
+    font-size: 20px;
+	height: 28px;
+    line-height: 28px;
+    font-weight: bold;
+	color: #6E552B;
+}
+
+.flex1{
+	flex: 1;
+}
+
+.common_morebtn{
+	flex-direction: row;
+	align-items: center;
+}
+
+.common_more{
+    font-size: 12px;
+	color: #8F8F8F;
+}
+
+.common_img{
+    width: 10px;
+    height: 10px;
+}
+
+.list_box{
+	background-color: #f8f8f8;
+}
+
+.grid_box{
+	flex-direction: row;
+	flex-wrap: wrap;
+	padding: 0 3px 0 15px;
+	background-color: #fff;
+}
+</style>

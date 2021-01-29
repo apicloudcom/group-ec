@@ -1,0 +1,240 @@
+<template>
+	<view class="popups_spec_bg">
+		<view class="popups_spec" style={'bottom:'+bottom+'px;'}>
+			<view class="popups_goods">
+				<image class="popups_img" src={this.props.dataInfo.image} mode="aspectFit"></image>
+				<view class="popups_rt">
+					<text class="popups_pr">{'￥'+(this.props.action == 'cart'?this.props.dataInfo.delprice:this.props.dataInfo.price)}</text>
+					<text class="popups_rep">{'库存'+this.props.dataInfo.ku_num}</text>
+					<text class="popups_cse">{'已选：'+(this.props.spec ? this.props.spec : '默认规格')}</text>
+				</view>
+				<view class="popups_close_box" onclick="fnClosePopups">
+					<image class="popups_close" src="../../images/main1/close.png"></image>
+				</view>
+			</view>
+			<scroll-view class="popups_scroll" scroll-y>
+				<view class="popups_box">
+					<text class="popups_tit">规格</text>
+					<view class="popups_cbox">
+						<text v-for="(item,index) in this.props.dataInfo.guige_data" class={'popups_cos'+(item.a == this.props.spec ? ' popups_cos_on': '')} onclick="fnChooseGuige" data-spec={item.a}>{item.a}</text>
+					</view>
+				</view>
+				<view class="popups_num_btn">
+					<text class="popups_ntit">数量</text>
+					<view class="card_num">
+						<text class={'card_btn'+(this.props.buynum==1?' card_btn_disable':'')} onclick="fnMinusBuynum">-</text>
+						<text class="card_num_text">{this.props.buynum}</text>
+						<text class="card_btn" onclick="fnAddBuynum">+</text>
+					</view>
+				</view>
+			</scroll-view>
+			<view class="popups_btns">
+				<text class="popups_btn pop_btn_orange" v-if={this.props.action=='spec'} onclick="fnBtn1">{'单独购买('+this.props.dataInfo.delprice+'元)'}</text>
+				<text class="popups_btn pop_btn_red" v-if={this.props.action=='spec'} onclick="fnBtn2">{'发起拼团('+this.props.dataInfo.price+'元)'}</text>
+				<text class="popups_btn pop_btn_red" v-if={this.props.action!='spec'} onclick="fnconfirm">确定</text>
+			</view>
+			<safe-area></safe-area>
+		</view>
+	</view>
+</template>
+<script>
+	export default {
+		name: 'detail-spec',
+		data(){
+			return {
+				bottom: -400
+			}
+		},
+		methods: {
+			installed(){
+				setTimeout(()=>{
+					this.data.bottom = 0;
+				}, 50);
+			},
+			fnClosePopups(){
+				this.fire('closeSpec');
+			},
+			fnChooseGuige(e){
+				let spec = e.currentTarget.dataset.spec;
+				if (this.props.spec != spec) {
+					this.fire('specChange', {spec: spec});
+				}
+			},
+			fnMinusBuynum(){
+				this.fire('minusNum');
+			},
+			fnAddBuynum(){
+				this.fire('addNum', {action:this.props.action});
+			},
+			fnBtn1(){
+				this.fire('btn1');
+			},
+			fnBtn2(){
+				this.fire('btn2');
+			},
+			fnconfirm(){
+				if (this.props.action == 'btn1') {
+					this.fire('btn1');
+				} else if (this.props.action == 'btn2') {
+					this.fire('btn2');
+				} else if (this.props.action == 'btn3') {
+					this.fire('btn3');
+				}
+			}
+		}
+	}
+</script>
+<style scoped>
+/* coverbg */
+.popups_spec_bg{
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	background-color: rgba(0,0,0,0.4);
+	z-index: 100;
+}
+.popups_spec{
+    position: absolute;
+    padding: 15px 0 0;
+    width: 100%;
+    height: 400px;
+	background-color: white;
+    box-sizing: border-box;
+	transition-property: bottom;
+	transition-duration: 0.3s;
+}
+/* 商品信息 */
+.popups_goods{
+	flex-direction: row;
+    height: 105px;
+	padding: 15px 0;
+	margin: 0 15px;
+	border-bottom: 1px solid #f8f8f8;
+}
+.popups_img{
+    width: 75px;
+    height: 75px;
+    border-radius: 2px;
+	background-color: #f8f8f8;
+}
+.popups_rt{
+	justify-content: space-between;
+	flex: 1;
+    margin-left: 12px;
+}
+.popups_pr{
+    font-size: 14px;
+	color: #FE904A;
+}
+.popups_rep{
+    font-size: 12px;
+	color: #666666;
+}
+.popups_cse{
+    font-size: 14px;
+	color: #333333;
+}
+.popups_close_box{
+	align-items: flex-end;
+	width: 40px;
+	height: 40px;
+}
+.popups_close_box:active{
+	opacity: 0.7;
+}
+.popups_close{
+    width: 14px;
+    height: 14px;
+}
+
+/* 规格信息 */
+.popups_scroll{
+	flex: 1;
+}
+.popups_box{
+	margin: 0 15px;
+	border-bottom: 1px solid #f8f8f8;
+}
+.popups_tit{
+    font-size: 14px;
+    margin-top: 15px;
+	color: #333333;
+}
+.popups_cbox{
+	flex-direction: row;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+.popups_cos{
+    padding: 7px 30px;
+    background-color: #F5F5F5;
+    color: #CCCCCC;
+    font-size: 12px;
+    margin-bottom: 15px;
+    margin-right: 15px;
+}
+.popups_cos_on{
+    color: #333333;
+}
+.popups_num_btn{
+	flex-direction: row;
+	justify-content: space-between;
+    align-items: center;
+    height: 44px;
+	padding: 0 15px;
+}
+.popups_ntit{
+    font-size: 14px;
+	color: #333333;
+}
+.card_num{
+	flex-direction: row;
+	align-items: center;
+    width: 106px;
+    height: 30px;
+	border: 1px solid #f8f8f8;
+	border-radius: 4px;
+}
+.card_btn{
+    width: 35px;
+    text-align: center;
+    font-size: 20px;
+    color: #555555;
+}
+.card_btn_disable{
+	color: #CCCCCC;
+}
+.card_num_text{
+	flex: 1;
+	text-align: center;
+	font-size: 14px;
+    color: #333333;
+}
+/* 底部按钮 */
+.popups_btns{
+	flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    height: 55px;
+	padding: 10px 15px;
+	border-top: 1px solid #f8f8f8;
+}
+.popups_btn{
+	flex: 1;
+    height: 40px;
+    border-radius: 4px;
+    text-align: center;
+    line-height: 40px;
+	color: white;
+}
+.popups_btn:active{
+	opacity: 0.7;
+}
+.pop_btn_orange{
+	margin-right: 15px;
+	background-color: #ffad00;
+}
+.pop_btn_red{
+	background-color: #339DFF;
+}
+</style>

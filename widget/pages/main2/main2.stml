@@ -1,0 +1,214 @@
+<template>
+	<view class="page">
+		<scroll-view class="scroll_left" scroll-y>
+			<view class={'left_one '+(item.id == classId ? 'left_one_on' : '')} v-for="(item,index) in classList" data-id={item.id} onclick="fnChooseClassinfo">
+				<view class={item.id != classId?'left_line hidden':'left_line'}></view>
+				<text class="left_zi" style={'color:'+(item.id==classId?'#333;':'#8f8f8f;')}>{item.name}</text> 
+			</view>
+		</scroll-view>
+		<scroll-view class="scroll_right" scroll-y>
+			<view class="right_box">
+				<view class="right_item" style={'width:'+itemWidth+'px;height:'+(itemWidth+40)+'px;'} v-for="(item,index) in classDetailList" data-id={item.id} data-name={item.name} onclick="fnOpenGoodslist">
+					<image class="right_item_img" style={'height:'+itemWidth+'px;'} src={item.icon}></image>
+					<text class="right_item_zi color_12">{item.name}</text>
+				</view>
+			</view>
+		</scroll-view>
+	</view>
+</template>
+<script>
+	import $util from '../../utils/util.js'
+	export default {
+		name: 'main2',
+		data() {
+			return {
+				allDataList: [],
+				classList: [],
+				classId: '',
+				classDetailList: []
+			}
+		},
+		computed: {
+			itemWidth(){
+				return Math.floor((api.winWidth - 80 - 60 - 30) / 3);
+			}
+		},
+		methods: {
+			apiready() {
+				this.fngetClass();
+			},
+
+			/**
+			 * 生命周期函数--监听页面显示
+			 */
+			onShow() {
+				let classId = api.getPrefs({
+					sync: true,
+					key:'classId'
+				});
+				if (classId && this.data.classId != classId) {
+					this.didSelectClass(classId);
+				}
+			},
+
+			onHide(){
+				api.setPrefs({
+					key: 'classId',
+					value:''
+				});
+			},
+
+			/***
+			 * 选择分类
+			 * */ 
+			fnChooseClassinfo(e){
+				let id = e.currentTarget.dataset.id;
+				if (this.data.classId == id) {
+					return;
+				}
+				this.didSelectClass(id);
+			},
+
+			didSelectClass(classId){
+				this.data.classId = classId;
+				let data = this.data.allDataList;
+				let classDetailList = [];
+				for (let i in data){
+					if (data[i].pid == classId){
+						classDetailList.push(data[i]);
+					}
+				}
+				this.data.classDetailList = classDetailList;
+			},
+
+			/***
+			 * 获取分类
+			 * */ 
+			fngetClass(){
+				$util.showProgress();
+				let that = this;
+				$util.ajax({
+					url: 'homes/getClassData'
+				}, function(res, err){
+					if (res && res.errcode == 0){
+						let data = res.data;
+						that.data.allDataList = data;
+
+						let classList = [];
+						for (let i in data){
+							if (data[i].pid == 1){
+								classList.push(data[i]);
+							}
+						}
+
+						if (classList.length > 0) {
+							let classId = api.getGlobalData({
+								key:'classId'
+							});
+							if (!classId) {
+								classId = classList[0].id;
+							}
+							that.didSelectClass(classId);
+						}
+
+						that.data.classList = classList;
+					}
+					$util.hideProgress();
+				});
+			},
+			/***
+			* 分类商品
+			*/
+			fnOpenGoodslist(e){
+				let dataset = e.currentTarget.dataset;
+				$util.openWin({
+					name: 'goodslist',
+					url: '../goodslist/goodslist.stml',
+					title: dataset.name,
+					pageParam: {
+						id: dataset.id,
+						title: dataset.name
+					}
+				});
+			},
+
+			/**
+			 * 用户点击右上角分享
+			 */
+			onShareAppMessage: function () {}
+		}
+	}
+</script>
+<style>
+.page {
+	flex-direction: row;
+	height: 100%;
+    background-color: #f6f6f6;
+}
+
+/* left */
+.scroll_left{
+    width: 80px;
+    background-color: #f8f8f8;
+}
+
+.left_one{
+	flex-direction: row;
+	align-items: center;
+    height: 40px;
+    background-color: #f8f8f8;
+}
+
+.left_one_on{
+    background-color: #FFFFFF;
+}
+
+.left_line{
+    width: 4px;
+    height: 14px;
+    background-color: #339DFF;
+	visibility: visible;
+}
+
+.hidden{
+	visibility: hidden;
+}
+
+.left_zi{
+	flex: 1;
+	font-size: 14;
+	font-weight: 500;
+    text-align: center;
+}
+
+/* right */
+.scroll_right{
+	flex: 1;
+}
+
+.right_box {
+	flex-direction: row;
+	flex-wrap: wrap;
+	margin: 15px;
+	padding: 15px 0 0 15px;
+	background-color: white;
+	border-radius: 8px;
+}
+
+.right_item{
+	margin-right: 15px;
+}
+
+.right_item_img{
+	width: 100%;
+	background-color: #f6f6f6;
+}
+
+.right_item_zi{
+	height: 40px;
+	line-height: 40px;
+	text-align: center;
+	color: #8f8f8f;
+	font-size: 14px;
+}
+</style>

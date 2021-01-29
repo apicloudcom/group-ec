@@ -1,0 +1,386 @@
+<template>
+    <view class="page">
+		<view class="nav">
+			<view class="nav_one" v-for="(item,index) in navList" data-index={index} onclick="fnChooseType">
+				<text class={navIndex==index?'nav_zi nav_zi_on':'nav_zi'}>{item.text}</text>
+			</view>
+		</view>
+		<!-- list -->
+		<scroll-view class="list_box" scroll-y enable-back-to-top refresher-enabled refresher-triggered={refresherTriggered} onrefresherrefresh="onrefresherrefresh" onscrolltolower="onscrolltolower">
+			<view class="list_one" v-for="(item,index) in olist" data-orderid={item.orderid} onclick="fnOpenDetails">
+				<view class="top_box">
+					<text class="top_text">{'订单编号：' + item.orderid}</text>
+					<text class="top_text">{item.status_str}</text>
+				</view>
+				<order-goods dataList={item.buy_data} userInfo={item.orderid} onitemClick="onGoodsItemClick"></order-goods>
+				<view class="bot-box" v-if={item.status == 2}>
+					<text class="list_szi">{'共'+(item.buy_num||0)+'件商品'}</text>
+					<view class="flex1"></view>
+					<text class="list_szi">合计：</text>
+					<text class="list_rzi">{'￥'+item.pay_price}</text>
+				</view>
+				<view class="bot-box" v-if={item.status == 2}>
+					<text class="tuan-item-num-text">还差</text><text class="tuan-item-num">{item.cnum}</text><text class="tuan-item-num-text">人拼成，</text>
+					<count-down time={item.endmiao} desc="剩余"></count-down>
+					<view class="flex1"></view>
+					<text class="btn btn-orange" data-index={index} onclick="fnInvite">邀请好友</text>
+				</view>
+				<view class="bot-box" v-else>
+					<text class="list_szi">{'共'+(item.buy_num||0)+'件商品，合计:'}</text>
+					<text class="list_rzi">{'￥'+item.pay_price}</text>
+					<view class="flex1"></view>
+					<!-- 取消订单 未支付 -->
+					<text class="btn btn-gray" v-if={item.status == 1} data-id={item.id} onclick="fnCancelOrder">取消订单</text>
+					<text class="btn btn-orange" v-if={item.status == 1} data-orderid={item.orderid} onclick="fnPayOrder">立即付款</text>
+					<!-- 取消订单 已支付 -->
+					<text class="btn btn-gray" v-if={item.status > 1 && item.status < 4} data-id={item.id} onclick="fnCancelOrderPay">取消订单</text>
+					<!-- 确认收货 -->
+					<text class="btn btn-orange" v-if={item.status == 4} data-id={item.id} onclick="fnConfirmOrder">确认收货</text>
+				</view>
+			</view>
+			<no-data  v-if={olist.length==0} image="../../images/common/nolist.png" desc="暂无订单"></no-data>
+		</scroll-view>
+		<!-- share -->
+		<detail-share v-if={showShare} onshareCancel="onshareCancel" onshare="onshare"></detail-share>
+    </view>
+</template>
+<script>
+import $util from '../../utils/util.js'
+import '../../components/order-goods.stml'
+import '../../components/no-data.stml'
+import '../../components/count-down.stml'
+import '../../components/detail/detail-share.stml'
+import UserCenter from '../../utils/user'
+export default {
+	name: 'order_list',
+	data() {
+		return{
+			navList: [{
+				text: '全部',
+				type: 0
+			},{
+				text: '待付款',
+				type: 1
+			},{
+				text: '待成团',
+				type: 2
+			},{
+				text: '待发货',
+				type: 3
+			},{
+				text: '待收货',
+				type: 4
+			},{
+				text: '已完成',
+				type: 5
+			}],
+			navIndex: 0,
+			type: 0,
+			olist: [],
+			page: 1,
+			haveMore: true,
+			loading: false,
+			refresherTriggered: false,
+			showShare:false,
+			index:0
+		}
+	},
+	methods: {
+		apiready(){
+			let type = api.pageParam.type;
+			if (type) {
+				let list = this.data.navList;
+				for (var i=0;i<list.length;i++){
+					if (type == list[i].type) {
+						this.data.navIndex = i;
+					}
+				}
+			}
+			this.getOrderList(false, true);
+		},
+		fnChooseType(e){
+			let index = e.currentTarget.dataset.index;
+			if (index != this.data.navIndex) {
+				this.data.navIndex = index;
+				this.data.olist = [];
+				this.getOrderList(false, true);
+			}
+		},
+		fnOpenDetails(e){
+			let orderid = e.currentTarget.dataset.orderid;
+			$util.openWin({
+				name: 'orderdetail',
+				url: '../order_details/order_details.stml',
+				title: '订单详情',
+				pageParam: {
+					orderid: orderid
+				}
+			});
+		},
+		onGoodsItemClick(e){
+			let orderid = e.detail.userInfo;
+			$util.openWin({
+				name: 'orderdetail',
+				url: '../order_details/order_details.stml',
+				title: '订单详情',
+				pageParam: {
+					orderid: orderid
+				}
+			});
+		},
+		fnInvite(e) {
+			this.data.index = e.currentTarget.dataset.index;
+			this.data.showShare = true;
+		},
+		fnCancelOrder(e){
+			api.confirm({
+				title: '提示',
+				msg: '您确定要取消订单吗？'
+			}, (ret)=>{
+				if (ret.buttonIndex == 2){
+					$util.showProgress();
+					$util.ajax({
+						url: 'homes/orderOut?id=' + e.currentTarget.dataset.id
+					}, (res,err)=>{
+						$util.hideProgress();
+						if (res && res.errcode == 0){
+							$util.toast('取消成功');
+							this.getOrderList(false, true);
+						} else {
+							$util.toast('取消失败');
+						}
+					})
+				}
+			});
+		},
+		fnCancelOrderPay(e){
+			api.confirm({
+				title: '提示',
+				msg: '您确定要取消订单吗？'
+			}, (ret)=>{
+				if (ret.buttonIndex == 2){
+					$util.showProgress();
+					$util.ajax({
+						url: 'homes/ordertui?id=' + e.currentTarget.dataset.id
+					}, (res,err)=>{
+						$util.hideProgress();
+						if (res) {
+							if (res.errcode == 0){
+								$util.toast('取消成功');
+								this.getOrderList(false, true);
+							} else {
+								$util.toast(res.msg);
+							}
+						} else {
+							$util.toast('网络错误');
+						}
+					})
+				}
+			});
+		},
+		fnPayOrder(e){
+			$util.showProgress();
+			let ids = e.currentTarget.dataset.orderid;
+			$util.payOrder(ids, (flag, msg)=>{
+				$util.hideProgress();
+				$util.toast(msg);
+				if (flag) {
+					//支付成功
+					this.getOrderList(false, true);
+				}
+			});
+		},
+		fnConfirmOrder(e){
+			api.confirm({
+				title: '提示',
+				msg: '是否确认收货？'
+			}, (ret)=>{
+				if (ret.buttonIndex == 2){
+					$util.showProgress();
+					$util.ajax({
+						url: 'homes/orderOk?id=' + e.currentTarget.dataset.id
+					}, (res,err)=>{
+						$util.hideProgress();
+						if (res && res.errcode == 0){
+							$util.toast('确认收货成功');
+							this.getOrderList(false, true);
+						} else {
+							$util.toast('确认收货失败');
+						}
+					})
+				}
+			});
+		},
+		onrefresherrefresh(){
+			this.data.refresherTriggered = true;
+			this.getOrderList(false, false);
+		},
+		onscrolltolower(){
+			if (this.data.haveMore && !this.data.loading) {
+				this.getOrderList(true, false);
+			}
+		},
+		getOrderList(loadMore, showProgress){
+			if (showProgress) {
+				$util.showProgress();
+			}
+			if (!loadMore) {
+				this.data.page = 1;
+			}
+			var page = this.data.page;
+			var status = this.data.navList[this.data.navIndex].type;
+			var url = "homes/orderList?page=" + page + "&sta=" + status;
+			$util.ajax({
+				url: url
+			}, (ret,err)=>{
+				if (ret && ret.errcode == 0) {
+					let list = ret.data;
+                    for (let i=0; i<list.length; i++){
+                        let buy_data = list[i].buy_data;
+                        let buynum = 0;
+                        for (let j=0; j<buy_data.length; j++) {
+                            let goods = buy_data[j];
+                            buynum = buynum + goods.buynum;
+                        }
+                        list[i].buy_num = buynum;
+					}
+					this.data.haveMore = list.length > 0;
+					if (loadMore) {
+						this.data.olist = this.data.olist.concat(list);
+					} else {
+						this.data.olist = list;
+					}
+					if (list.length > 0) {
+						this.data.page += 1;
+					}
+				}
+				this.data.loading = false;
+				this.data.refresherTriggered = false;
+				if (showProgress) {
+					$util.hideProgress();
+				}
+			});
+		},
+		// share
+		onshareCancel(){
+			this.data.showShare = false;
+		},
+		onshare(e){
+			this.data.showShare = false;
+			let name = e.detail.name;
+			if (name == '微信' && $util.isApp()) {
+				// to do
+				$util.toast('分享成功');
+			}
+		},
+		/**
+		 * 用户点击右上角分享
+		 */
+		onShareAppMessage(options) {
+			if (options.from == 'button') {
+				let udata = UserCenter.getUserInfo();
+				let item = this.data.olist[this.data.index];
+				let title = '您的好友'+ udata.nickname +'邀请您拼团购买' + item.buy_data[0].title;
+				let imageUrl = item.buy_data[0].image;
+				let path = '/pages/group/group?tuanid=' + item.tuanid + '&uid=' + udata.uid;
+				return {imageUrl, title, path};
+			}
+		}
+	}
+}
+</script>
+<style>
+.page {
+	height: 100%;
+	background-color: #f8f8f8;
+}
+.nav{
+	flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    height: 44px;
+	background-color: white;
+}
+.nav_one{
+	flex: 1;
+	justify-content: center;
+	align-items: center;
+}
+.nav_zi{
+	padding: 7px 0;
+	font-size: 14px;
+	color: #999999;
+	border-bottom: none;
+}
+.nav_zi_on{
+	color: #FF7037;
+	border-bottom: 2px solid #FF7037;
+}
+/* list */
+.list_box{
+	flex: 1;
+}
+.list_one{
+    width: 100%;
+    background: #ffffff;
+    margin-top: 8px;
+}
+.top_box{
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+	height: 44px;
+	padding: 0 15px;
+	border-bottom: 1px solid #f8f8f8;
+}
+.top_text{
+	font-size: 14px;
+	color: #333333;
+}
+.bot-box{
+	flex-direction: row;
+    align-items: center;
+    height: 44px;
+	padding: 0 15px;
+	border-bottom: 1px solid #f8f8f8;
+}
+.tuan-item-num-text{
+    font-size: 12px;
+    color: #333333;
+}
+.tuan-item-num{
+    font-size: 12px;
+    color: #FF7037;
+	margin: 0 3px;
+}
+.list_szi{
+    font-size: 12px;
+	color: #333333;
+}
+.list_rzi{
+    font-size: 16px;
+	color: #FE5C00;
+}
+.flex1{
+	flex: 1;
+}
+.btn{
+    width: 70px;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+    margin-left: 8px;
+    border-radius: 2px;
+	font-size: 14px;
+	padding: 0 3px;
+}
+.btn-gray{
+	background-color: white;
+    border: 1px solid #B5B5B5;
+	color: #999999;
+}
+.btn-orange{
+	background-color: #339DFF;
+	color: white;
+}
+</style>

@@ -1,0 +1,153 @@
+<template>
+    <view class="page">
+		<!-- list -->
+		<scroll-view class="list_box" scroll-y enable-back-to-top refresher-enabled refresher-triggered={refresherTriggered} onrefresherrefresh="onrefresherrefresh" onscrolltolower="onscrolltolower">
+			<view class="list_one" v-for="(item,index) in olist" data-orderid={item.orderid} onclick="fnOpenDetails">
+				<view class="top_box">
+					<text class="top_text">{'订单编号：' + item.tid}</text>
+				</view>
+				<order-goods dataList={[item]} userInfo={item.id} onitemClick="onGoodsItemClick"></order-goods>
+				<view class="bot-box">
+					<image class="tui_icon" src="../../images/main4/tuikuan.png"></image>
+					<text class="type_str">{item.type_str}</text>
+					<view class="flex1"></view>
+					<text class="sta_str">{item.sta_str}</text>
+				</view>
+			</view>
+			<no-data  v-if={olist.length==0} image="../../images/common/nolist.png" desc="暂无订单"></no-data>
+		</scroll-view>
+    </view>
+</template>
+<script>
+import $util from '../../utils/util.js'
+import '../../components/order-goods.stml'
+import '../../components/no-data.stml'
+export default {
+	name: 'shouhou_list',
+	data() {
+		return{
+			olist: [],
+			page: 1,
+			haveMore: true,
+			loading: false,
+			refresherTriggered: false
+		}
+	},
+	methods: {
+		apiready(){
+			this.getOrderList(false, true);
+		},
+		fnOpenDetails(e){
+			let orderid = e.currentTarget.dataset.orderid;
+			$util.openWin({
+				name: 'shouhou_show',
+				url: '../shouhou_show/shouhou_show.stml',
+				title: '订单详情',
+				pageParam: {
+					orderid: orderid
+				}
+			});
+		},
+		onGoodsItemClick(e){
+			let orderid = e.detail.userInfo;
+			$util.openWin({
+				name: 'shouhou_show',
+				url: '../shouhou_show/shouhou_show.stml',
+				title: '订单详情',
+				pageParam: {
+					orderid: orderid
+				}
+			});
+		},
+		onrefresherrefresh(){
+			this.data.refresherTriggered = true;
+			this.getOrderList(false, false);
+		},
+		onscrolltolower(){
+			if (this.data.haveMore && !this.data.loading) {
+				this.getOrderList(true, false);
+			}
+		},
+		getOrderList(loadMore, showProgress){
+			if (showProgress) {
+				$util.showProgress();
+			}
+			if (!loadMore) {
+				this.data.page = 1;
+			}
+			var page = this.data.page;
+			var url = "homes/shouhouList?page=" + page;
+			$util.ajax({
+				url: url
+			}, (ret,err)=>{
+				if (ret && ret.errcode == 0) {
+					let list = ret.data;
+					this.data.haveMore = list.length > 0;
+					if (loadMore) {
+						this.data.olist = this.data.olist.concat(list);
+					} else {
+						this.data.olist = list;
+					}
+					if (list.length > 0) {
+						this.data.page += 1;
+					}
+				}
+				this.data.loading = false;
+				this.data.refresherTriggered = false;
+				if (showProgress) {
+					$util.hideProgress();
+				}
+			});
+		}
+	}
+}
+</script>
+<style>
+.page {
+	height: 100%;
+	background-color: #f8f8f8;
+}
+/* list */
+.list_box{
+	flex: 1;
+}
+.list_one{
+    width: 100%;
+    background: #ffffff;
+    margin-top: 8px;
+}
+.top_box{
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+	height: 44px;
+	padding: 0 15px;
+	border-bottom: 1px solid #f8f8f8;
+}
+.top_text{
+	font-size: 14px;
+	color: #333333;
+}
+.bot-box{
+	flex-direction: row;
+    align-items: center;
+    height: 44px;
+	padding: 0 15px;
+}
+.tui_icon{
+    width: 18px;
+    height: 18px;
+    margin-right: 3px;
+}
+.flex1{
+	flex: 1;
+}
+.type_str{
+	font-size: 12px;
+	color: #666666;
+}
+.sta_str{
+	font-size: 12px;
+	color: #E65229;
+}
+</style>

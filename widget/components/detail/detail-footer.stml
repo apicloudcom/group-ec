@@ -1,0 +1,79 @@
+<template>
+	<view class="floor_box_page">
+		<view class="floor_box">
+			<view class="floor_btn" onclick="onshare">
+				<image class="floor_icon" src="../../images/main1/share.png"></image>
+				<text class="floor_zi">分享</text>
+			</view>
+			<text class="floor_btn_4 btn_orange" onclick="onaddcart">{'单独购买('+this.props.delprice+'元)'}</text>
+			<text class="floor_btn_4 btn_red" onclick="onbuy">{'发起拼团('+this.props.price+'元)'}</text>
+		</view>
+		<safe-area></safe-area>
+	</view>
+</template>
+<script>
+	export default {
+		name: 'detail-footer',
+		methods: {
+			onshare(){
+				this.fire('share');
+			},
+			oncart(){
+				this.fire('cart');
+			},
+			onaddcart(){
+				this.fire('addCart');
+			},
+			onbuy(){
+				this.fire('buy');
+			}
+		}
+	}
+</script>
+<style scoped>
+.floor_box_page{
+	width: 100%;
+	background-color: white;
+}
+.floor_box{
+	flex-direction: row;
+    align-items: center;
+    height: 48px;
+	padding: 0 15px;
+}
+.floor_btn{
+	align-items: center;
+    width: 45px;
+}
+.floor_icon{
+    width: 20px;
+    height: 20px;
+}
+.floor_zi{
+    font-size: 10px;
+	margin-top: 3px;
+	color: #666;
+}
+.floor_btn_4{
+	flex: 1;
+	height: 40px;
+    line-height: 40px;
+    text-align: center;
+	color: white;
+	font-size: 14px;
+}
+.floor_btn_4:active{
+	opacity: 0.7;
+}
+.btn_orange{
+	margin-left: 15px;
+	border-top-left-radius: 4px;
+	border-bottom-left-radius: 4px;
+	background-color: #ffad00;
+}
+.btn_red{
+	border-top-right-radius: 4px;
+	border-bottom-right-radius: 4px;
+	background-color: #339DFF;
+}
+</style>

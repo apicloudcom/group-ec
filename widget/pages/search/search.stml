@@ -1,0 +1,143 @@
+<template>
+    <view class="page">
+		<!-- 搜索 -->
+		<view class="search_container">
+			<view class="search_box">
+				<image class="search_img" src="../../images/main1/search.png"></image>
+				<input class="search_int" autofocus type="text" placeholder="请输入搜索内容" confirm-type="search" value={search_key} oninput="onInput" onconfirm="search"></input>
+			</view>		
+			<text class="search_btn" onclick="cancel">取消</text>
+		</view>
+		<scroll-view class="scroll-view" scroll-y enable-back-to-top onscrolltolower="onscrolltolower">
+			<list-item v-for="(item) in goodsList" item={item} showHot onitemClick="fnOpenDetails"></list-item>
+			<no-data v-if={showNoData} image="../../images/common/nosearch.png" desc="查询无果"></no-data>
+		</scroll-view>
+    </view>
+</template>
+<script>
+	import $util from '../../utils/util.js'
+	import '../../components/list-item.stml'
+	import '../../components/no-data.stml'
+	export default {
+		name: 'search',
+		data() {
+			return{
+				search_key: '',
+				goodsList: [],
+				page: 1,
+				haveMore: true,
+				loading: false,
+				showNoData: false
+			}
+		},
+		methods: {
+			apiready(){
+				
+			},
+			onInput(e){
+				this.data.search_key = e.detail.value;
+			},
+			search(e){
+				let key = this.data.search_key;
+				if (key) {
+					this.getData(false);
+				} else {
+					this.data.goodsList = [];
+				}
+			},
+			cancel(){
+				api.closeWin();
+			},
+			fnOpenDetails(e){
+				let id = e.detail.id;
+                $util.openWin({
+                    name: 'detail-'+id,
+                    url: '../details/details.stml',
+					title: '商品详情',
+					pageParam: {
+						id: id
+					}
+                });
+			},
+			onscrolltolower(){
+				if (this.data.haveMore && !this.data.loading) {
+					this.getData(true);
+				}
+			},
+			getData(loadMore){
+				let that = this;
+				if (!loadMore) {
+					that.data.page = 1;
+					$util.showProgress();
+				}
+				this.data.loading = true;
+				let key = that.data.search_key;
+				var url = "homes/getGoodsList?key=" + key + "&page=" + that.data.page;
+				$util.ajax({
+					url: url
+				}, function(res, err){
+					if (res && res.errcode == 0) {
+						let list = res.data;
+						that.data.haveMore = list.length > 0;
+						if (loadMore) {
+							that.data.goodsList = that.data.goodsList.concat(list);
+						} else {
+							that.data.goodsList = list;
+						}
+						if (list.length > 0) {
+							that.data.page += 1;
+						}
+					}
+					that.data.loading = false;
+					that.data.showNoData = that.data.goodsList.length == 0;
+					$util.hideProgress();
+				});
+			}
+		}
+	}
+</script>
+<style>
+.page {
+	height: 100%;
+	background-color: #f8f8f8;
+}
+/* search */
+.search_container{
+	flex-direction: row;
+	align-items: center;
+	height: 44px;
+	background-color: #fff;
+}
+.search_box{
+	flex-direction: row;
+    align-items: center;
+	flex: 1;
+    height: 30px;
+    background-color: #F5F5F5;
+    border-radius: 15px;
+	margin-left: 15px;
+}
+.search_img{
+    width: 12px;
+    height: 12px;
+    margin-left: 13px;
+    margin-right: 6px;
+}
+.search_int{
+	flex: 1;
+	font-size: 12px;
+	color: #333;
+	background-color: transparent;
+	border: none;
+}
+.search_btn{
+    color: #666;
+    font-size: 12px;
+	padding: 0 15px;
+}
+/* list */
+.scroll-view{
+	flex: 1;
+	margin-top: 15px;
+}
+</style>

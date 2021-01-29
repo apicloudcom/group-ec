@@ -1,0 +1,6 @@
+{
+  "usingComponents": {},
+  "navigationStyle":  "default",
+  "navigationBarTitleText":"售后",
+  "enablePullDownRefresh": true
+}

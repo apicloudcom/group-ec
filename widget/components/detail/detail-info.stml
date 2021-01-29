@@ -1,0 +1,102 @@
+<template>
+	<view class="goods_box">
+		<view class="goods_top">
+			<text class="goods_spr">¥</text><text class="goods_pr">{this.props.dataInfo.price}</text>
+			<text class="goods_mpr">{this.props.dataInfo.delprice?'￥'+this.props.dataInfo.delprice:''}</text>
+			<view class="flex1"></view>
+			<view class="hot-box">
+				<image class="hot-num-img" src="../../images/main2/hot.png"></image>
+				<text class="hot-num">{this.fixBuynum(this.props.dataInfo.buy_num)}</text>
+			</view>
+		</view>
+		<text class="goods_tit">{this.props.dataInfo.title}</text>
+		<text v-if={this.props.dataInfo.yunfei_type} class="goods_exp">{'快递：'+(this.props.dataInfo.yunfei_type == 'none' ? '包邮' : (this.props.dataInfo.yunfei_money + '元'))}</text>
+	</view>
+</template>
+<script>
+	export default {
+		name: 'detail-info',
+		data(){
+			return {
+				
+			}
+		},
+		methods: {
+			fixBuynum(num){
+				if (!num) {return 0;}
+				num = parseInt(num);
+				if (num > 9999) {
+					num = (num / 10000).toFixed(2);
+					num = num + 'w';
+				}
+				return num;
+			}
+		}
+	}
+</script>
+<style scoped>
+.goods_box{
+	padding: 15px;
+	background-color: white;
+}
+
+.goods_top{
+	flex-direction: row;
+    align-items: center;
+}
+
+.goods_spr{
+	margin-top: 5px;
+	margin-right: 3px;
+    font-size: 16px;
+	color: #FE904A;
+}
+
+.goods_pr{
+    font-size: 23px;
+	color: #FE904A;
+}
+
+.flex1{
+	flex: 1;
+}
+
+.goods_mpr{
+    font-size: 12px;
+    text-decoration: line-through;
+    margin-left: 10px;
+	margin-top: 8px;
+	color: #B5B5B5;
+}
+
+.hot-box{
+	flex-direction: row;
+    align-items: center;
+    padding: 1px 6px;
+    background-color: #FEF8F4;
+    border-radius: 8px;
+    border: 1px solid #FE904A;
+}
+.hot-num-img{
+    width: 9px;
+    height: 11px;
+    margin-right: 3px;
+}
+.hot-num{
+    color: #FE904A;
+    font-size: 10px;
+}
+.goods_tit{
+    margin-top: 15px;
+    line-height: 22px;
+    color: #333333;
+    font-weight: bold;
+    text-overflow: ellipsis;
+    white-space: normal;
+}
+.goods_exp{
+    font-size: 14px;
+    margin-top: 8px;
+	color: #666;
+}
+</style>

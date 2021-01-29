@@ -1,0 +1,166 @@
+<template>
+    <view class="page">
+		<view class="flex1">
+			<scroll-view class="flex1" v-if={dataList.length > 0}>
+				<view class="list_one" v-for="(item,index) in dataList" data-index={index} onclick="fnClickAddress">
+					<view class="inner">
+						<view class="list_def">
+							<image class="list_def_img" src="../../images/main4/def.png" v-if={item.def == 1}></image>
+						</view>
+						<view class="left">
+							<view class="list_nav" data-index={index} data-id={item.id}>
+								<text class="list_name">{'收货人：' + item.name}</text>
+								<text class="list_phone">{$filter.phoneHash(item.phone.toString())}</text>
+							</view>
+							<text class="list_content" data-index={index} data-id={item.id}>{'收货地址：' + item.address}</text>
+						</view>
+						<view class="right" onclick="fnOpenEditPage" data-index={index}>
+							<image class="list_icon" src="../../images/main4/edit.png"></image>
+						</view>
+					</view>
+				</view>
+			</scroll-view>
+			<no-data v-if={dataList.length == 0} image="../../images/common/nolist.png" desc="还没有地址，去添加吧~"></no-data>
+		</view>
+		<text class="btn_add" onclick="fnOpenAddPage">添加新地址</text>
+    </view>
+</template>
+<script>
+import $util from '../../utils/util.js'
+import $filter from '../../utils/filter.js'
+import '../../components/no-data.stml'
+export default {
+	name: 'address',
+	data() {
+		return{
+			dataList: []
+		}
+	},
+	methods: {
+		onShow(){
+			this.getAddressList();
+		},
+		getAddressList(){
+			$util.showProgress();
+			var url = "homes/addRessList?page=1";
+			$util.ajax({
+				url: url
+			}, (ret,err)=>{
+				if (ret && ret.data) {
+					this.data.dataList = ret.data;
+				}
+				$util.hideProgress();
+			});
+		},
+		fnClickAddress(e){
+			let from = api.pageParam.from;
+			if (from && from == 'order') {
+				let index = e.currentTarget.dataset.index;
+				let data = this.data.dataList[index];
+				api.sendEvent({
+					name: 'useraddress',
+					extra: data
+				});
+				api.closeWin();
+			}
+		},
+		fnOpenEditPage(e){
+			let index = e.currentTarget.dataset.index;
+			let data = this.data.dataList[index];
+			$util.openWin({
+				name: 'address_edit',
+				url: '../address_edit/address_edit.stml',
+				title: '编辑收货地址',
+				pageParam: data
+			});
+		},
+		fnOpenAddPage(){
+			$util.openWin({
+				name: 'address_edit',
+				url: '../address_edit/address_edit.stml',
+				title: '新增收货地址'
+			});
+		},
+		fnRepay(){
+			api.closeWin();
+		}
+	}
+}
+</script>
+<style>
+.page {
+	height: 100%;
+	background-color: white;
+}
+.flex1{
+	flex: 1;
+}
+.list_one{
+    margin: 15px 15px 0;
+	box-shadow: 0 0 10px #ddd;
+}
+.inner{
+	flex-direction: row;
+	align-items: center;
+	border-radius: 4px;
+    height: 106px;
+	background-color: white;
+}
+.left{
+	flex: 1;
+	margin-left: 15px;
+}
+.right{
+	justify-content: center;
+	padding: 10px 15px;
+}
+.list_icon{
+    width: 18px;
+    height: 18px;
+}
+.list_def{
+    width: 37px;
+    height: 37px;
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+.list_def_img{
+	width: 100%;
+	height: 100%;
+}
+.list_nav{
+	flex-direction: row;
+	justify-content: space-between;
+}
+.list_name{
+    font-size: 15px;
+	color: #333333;
+}
+.list_phone{
+    font-size: 14px;
+	color: #777777;
+}
+.list_content{
+    height: 50px;
+    line-height: 25px;
+    font-size: 15px;
+    margin-top: 5px;
+	color: #333333;
+}
+.btn_add{
+	align-self: stretch;
+    height: 45px;
+    border-radius: 4px;
+    font-weight:bold;
+    text-align: center;
+    line-height: 45px;
+    font-size: 16px;
+	margin: 15px;
+	color: white;
+	background-color: #339DFF;
+}
+.btn_add:active{
+	opacity: 0.7;
+}
+</style>

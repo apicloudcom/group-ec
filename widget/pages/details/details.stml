@@ -1,0 +1,343 @@
+<template>
+    <view class="page">
+		<scroll-view class="main" scroll-y>
+			<!-- banner -->
+			<detail-swiper dataList={bannerList}></detail-swiper>
+			<!-- goods info -->
+			<detail-info dataInfo={dataInfo}></detail-info>
+			<!-- 拼团info -->
+			<view>
+				<view class="pt_wrap" v-if={tuanList.length > 0}>
+					<view class="pt_top" onclick="fnOpenTuanlist">
+						<text class="pt_nav">这些人刚刚购买成功，可参与拼单</text>
+						<text class="pt_more">查看全部</text>
+						<image class="pt_more_img" src="../../images/main1/gor.png"></image>
+					</view>
+					<!-- pt_one -->
+					<tuan-item v-for="(item,index) in tuanList" v-if={item.endmiao > 0} item={item} ontuan="ontuan"></tuan-item>
+				</view>
+			</view>
+			<!-- goods spec -->
+			<view class="goods_spec_box" onclick="fnChooseSpec">
+				<text class="goods_spec_desc">规格</text>
+				<text class="goods_spec_text">{spec ? spec : '默认规格'}</text>
+				<view class="flex1"></view>
+				<image class="goods_arrow" src="../../images/main1/gor3.png"></image>
+			</view>
+			<!-- goods details -->
+			<view class="goods_details_box">
+				<view class="goods_detail_desc">
+					<view class="left_line"></view>
+					<text class="left_zi color_1">商品详情</text>
+				</view>
+				<rich-text nodes={html}></rich-text>
+			</view>
+		</scroll-view>
+		<!-- floor btns -->
+		<detail-footer price={dataInfo.price||0} delprice={dataInfo.delprice||0} onshare="onfooterShare" oncart="onfooterCart" onaddCart="onfooterAddCart" onbuy="onfooterBuy"></detail-footer>
+		<!-- spec select -->
+		<detail-spec v-if={showSpec} dataInfo={dataInfo} action={action} spec={spec} buynum={buynum} oncloseSpec="oncloseSpec" onspecChange="onspecChange" onminusNum="onminusNum" onaddNum="onaddNum" onbtn1="onsinglebuy" onbtn2="ontuanbuy" onbtn3="oncantuan"></detail-spec>
+		<!-- share -->
+		<detail-share v-if={showShare} onshareCancel="onshareCancel" onshare="onshare"></detail-share>
+	</view>
+</template>
+<script>
+import $util from '../../utils/util.js'
+import UserCenter from '../../utils/user.js'
+import '../../components/detail/detail-swiper.stml'
+import '../../components/detail/detail-info.stml'
+import '../../components/detail/tuan-item.stml'
+import '../../components/detail/detail-footer.stml'
+import '../../components/detail/detail-spec.stml'
+import '../../components/detail/detail-share.stml'
+export default {
+	name: 'detail',
+	data() {
+		return{
+			bannerList:[],
+			dataInfo:{},
+			tuanList:[],
+			html:'',
+			spec:'',
+			buynum:1,
+			action:'',
+			showSpec:false,
+			showShare:false
+		}
+	},
+	methods: {
+		apiready(){
+			this.getData();
+		},
+		getData(){
+			$util.showProgress();
+			let that = this;
+			let url = 'homes/getGoodsByid?id=' + api.pageParam.id;
+			$util.ajax({
+				url: url
+			}, function(res, err){
+				// console.log(JSON.stringify(res));
+				$util.hideProgress();
+				if (res) {
+					if (res.errcode == 0) {
+						let data = res.data;
+						that.data.dataInfo = data;
+
+						that.data.bannerList = data.images ? data.images.split(',') : data.image.split(',');
+
+						let tuanList = data.tuanData;
+						if (tuanList.length > 0) {
+							for (let i=0;i<tuanList.length;i++) {
+								if (that.data.tuanList.length < 2) {
+									let item = tuanList[i];
+									if (item.endmiao > 0) {
+										that.data.tuanList.push(item);
+									}
+								}
+							}
+						}
+
+						that.data.html = data.content?$util.fitRichText(data.content, api.winWidth-30):'';
+
+						let guige = data.guige_data;
+						if (guige && guige.length > 0){
+							that.data.spec = guige[0].a;
+						}
+					} else {
+						$util.toast(res.msg);
+						setTimeout(function(){
+							api.closeWin();
+						}, 1500);
+					}
+				} else {
+					$util.toast('网络错误');
+				}
+			});
+		},
+		fnOpenTuanlist: function(){
+			$util.openWin({
+				name: 'tuan',
+				url: '../tuan/tuan.stml',
+				title: '全部拼团',
+				pageParam: {
+					id: this.data.dataInfo.id
+				}
+			});
+		},
+		fnChooseSpec(){
+			this.data.action = 'spec';
+			this.data.showSpec = true;
+		},
+		ontuan(e){
+			this.data.tuanid = e.detail.id;
+			this.data.action = 'btn3';
+			this.data.showSpec = true;
+		},
+		// spec handler
+		oncloseSpec(){
+			this.data.showSpec = false;
+		},
+		onspecChange(e){
+			this.data.spec = e.detail.spec;
+		},
+		onminusNum(){
+			if (this.data.buynum > 1) {
+				this.data.buynum -= 1;
+			}
+		},
+		onaddNum(e){
+			if (e.detail.action == 'btn2') {
+				$util.toast('发起拼团商品每次只能购买一个~');
+				return;
+			}
+			if (this.data.buynum < this.data.dataInfo.ku_num) {
+				if (this.data.buynum < 20) {
+					this.data.buynum += 1;
+				} else {
+					$util.toast('添加数量已经达到上限');
+				}
+			}
+		},
+		oncantuan(){
+			this.gobuy('can');
+		},
+		ontuanbuy(){
+			this.gobuy('tuan');
+		},
+		onsinglebuy(){
+			this.gobuy('buy');
+		},
+		gobuy(act){
+			if (UserCenter.isLogin()) {
+				let buynum = this.data.buynum;
+				if (act=='tuan' && buynum > 1) {
+					$util.toast('发起拼团商品每次只能购买一个~');
+					return;
+				}
+				let title = act=='tuan'?'发起拼团':'立即购买';
+				let key = this.data.spec;
+				let id = this.data.dataInfo.id;
+				$util.openWin({
+					name: 'ordert',
+					url: '../ordert/ordert.stml',
+					title: title,
+					pageParam: {
+						act: act,
+						goodsid: id,
+						buynum: buynum,
+						key: key,
+						tuanid: act=='can'?this.data.tuanid:''
+					}
+				});
+				this.data.showSpec = false;
+			} else {
+				$util.goLogin();
+			}
+		},
+		// footer handler
+		onfooterShare(){
+			this.data.showShare = true;
+		},
+		onfooterCart(){
+			if (UserCenter.isLogin()) {
+				if ($util.isMp()) {
+					wx.switchTab({
+						url: '/pages/main3/main3'
+					});
+				} else {
+					$util.openWin({
+						name: 'cart',
+						url: '../main3/main3.stml',
+						title: '购物车'
+					});
+				}
+			} else {
+				$util.goLogin();
+			}
+		},
+		onfooterAddCart(){
+			this.data.action = 'btn1';
+			this.data.showSpec = true;
+		},
+		onfooterBuy(){
+			this.data.action = 'btn2';
+			this.data.showSpec = true;
+		},
+		// share
+		onshareCancel(){
+			this.data.showShare = false;
+		},
+		onshare(e){
+			this.data.showShare = false;
+			let name = e.detail.name;
+			if (name == '微信' && $util.isApp()) {
+				// to do
+				$util.toast('分享成功');
+			}
+		},
+		/**
+		 * 用户点击右上角分享
+		 */
+		onShareAppMessage() {
+			let odata = this.data.dataInfo;
+			return {
+				title: odata.title,
+				path: '/pages/details/details?id=' + odata.id,
+				imageUrl: odata.image
+			}
+		}
+	}
+}
+</script>
+<style>
+.page {
+	height: 100%;
+	background-color: #f8f8f8;
+}
+.main{
+	flex: 1;
+}
+/* pt info  */
+.pt_wrap{
+    max-height: 176px;
+    margin-top: 8px;
+	background-color: white;
+}
+.pt_top{
+	flex-direction: row;
+    align-items: center;
+    height: 50px;
+	border-bottom: 1px solid #f8f8f8;
+}
+.pt_nav{
+	flex: 1;
+    font-size: 14px;
+    margin-left: 15px;
+    font-weight: bold;
+	color: #333;
+}
+.pt_more{
+    font-size: 12px;
+	color: #8F8F8F;
+}
+.pt_more_img{
+    width: 13px;
+    height: 13px;
+    margin-left: 2px;
+    margin-right: 15px;
+}
+.pt_one{
+	flex-direction: row;
+    align-items: center;
+    height: 62px;
+}
+/* goods spec */
+.goods_spec_box{
+	flex-direction: row;
+    align-items: center;
+    height: 50px;
+    margin-top: 8px;
+	padding: 0 15px;
+	background-color: white;
+}
+.goods_arrow{
+    width: 14px;
+    height: 14px;
+}
+.goods_spec_desc{
+	font-size: 14px;
+	color: #666;
+}
+.goods_spec_text{
+	font-size: 14px;
+	color: #333;
+	margin-left: 14px;
+}
+/* goods details */
+.goods_details_box{
+    margin-top: 8px;
+	background-color: white;
+	padding: 0 15px 10px;
+}
+.goods_detail_desc{
+	flex-direction: row;
+    align-items: center;
+    height: 52px;
+	border-bottom: 1px solid #f8f8f8;
+}
+.left_line{
+    width: 3px;
+    height: 14px;
+    border-radius: 2px;
+	background-color: #339DFF;
+}
+.left_zi{
+    font-size: 16px;
+    font-weight: bold;
+	color: #333;
+    margin-left: 8px;
+}
+.goods_rich{
+    margin-top: 10px;
+}
+</style>

@@ -1,0 +1,82 @@
+<template>
+    <view class="page">
+		<image class="img" src="../../images/main4/shouhou_ok.jpg"></image>
+		<text class="t1">提交成功</text>
+		<text class="t2">售后申请提交成功，请耐心等待审核</text>
+		<view style="flex:1;"></view>
+		<text class="btn btn_red" onclick="fnOpenDetailPage">查看订单</text>
+		<text class="btn btn_white" onclick="fnOpenMainPage">返回首页</text>
+    </view>
+</template>
+<script>
+import $util from '../../utils/util.js'
+export default {
+	name: 'shouhou_ok',
+	data() {
+		return{
+			id: api.pageParam.id
+		}
+	},
+	methods: {
+		apiready(){
+			
+		},
+		fnOpenDetailPage(){
+			$util.openWin({
+				name: 'shouhou_show',
+				url: '../shouhou_show/shouhou_show.stml',
+				title: '订单详情',
+				pageParam: {
+					orderid: this.data.id
+				}
+			});
+		},
+		fnOpenMainPage(){
+			api.closeToWin({
+				name: 'root'
+			});
+		}
+	}
+}
+</script>
+<style>
+.page {
+	align-items: center;
+	height: 100%;
+	background-color: white;
+}
+.img {
+    width: 112px;
+    height: 80px;
+    margin-top: 50px;
+}
+.t1{
+	font-size: 28px;
+    margin-top: 15px;
+}
+.t2{
+	color: #666666;
+    margin-top: 15px;
+}
+.btn{
+    width: 690rpx;
+    height: 45px;
+    border-radius: 4px;
+	font-weight: bold;
+	margin: 0 15px 15px;
+    text-align: center;
+    line-height: 45px;
+    font-size: 16px;
+}
+.btn:active{
+	opacity: 0.7;
+}
+.btn_red{
+	background-color: #339DFF;
+	color: white;
+}
+.btn_white{
+    border:1px solid #ddd;
+	color: #666666;
+}
+</style>

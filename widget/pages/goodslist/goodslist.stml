@@ -1,0 +1,92 @@
+<template>
+    <view class="page">
+		<scroll-view class="scroll-view" scroll-y enable-back-to-top refresher-enabled refresher-triggered={refresherTriggered} onrefresherrefresh="onrefresherrefresh" onscrolltolower="onscrolltolower">
+			<view style="height:10px;"></view>
+			<list-item v-for="(item) in goodsList" item={item} showOriginalPrice onitemClick="fnOpenDetails"></list-item>
+			<no-data v-if={showNoData} image="../../images/common/nolist.png" desc="暂无商品"></no-data>
+		</scroll-view>
+    </view>
+</template>
+<script>
+	import $util from '../../utils/util.js'
+	import '../../components/list-item.stml'
+	import '../../components/no-data.stml'
+	export default {
+		name: 'goodslist',
+		data() {
+			return{
+				classId: '',
+				goodsList: [],
+				page: 1,
+				haveMore: true,
+				loading: false,
+				refresherTriggered: false,
+				showNoData: false
+			}
+		},
+		methods: {
+			apiready(){
+				this.data.classId = api.pageParam.id;
+				$util.showProgress();
+				this.getData(false);
+			},
+			fnOpenDetails(e){
+				let id = e.detail.id;
+                $util.openWin({
+                    name: 'detail-'+id,
+                    url: '../details/details.stml',
+					title: '商品详情',
+					pageParam: {
+						id: id
+					}
+                });
+			},
+			onrefresherrefresh(){
+				this.data.refresherTriggered = true;
+				this.getData(false);
+			},
+			onscrolltolower(){
+				if (this.data.haveMore && !this.data.loading) {
+					this.getData(true);
+				}
+			},
+			getData(loadMore){
+				let that = this;
+				if (!loadMore) {
+					that.data.page = 1;
+				}
+				this.data.loading = true;
+				var url = "homes/getGoodsList?classid=" + that.data.classId + "&page=" + that.data.page;
+				$util.ajax({
+					url: url
+				}, function(res, err){
+					if (res && res.errcode == 0) {
+						let list = res.data;
+						that.data.haveMore = list.length > 0;
+						if (loadMore) {
+							that.data.goodsList = that.data.goodsList.concat(list);
+						} else {
+							that.data.goodsList = list;
+						}
+						if (list.length > 0) {
+							that.data.page += 1;
+						}
+					}
+					that.data.loading = false;
+					that.data.refresherTriggered = false;
+					that.data.showNoData = that.data.goodsList.length == 0;
+					$util.hideProgress();
+				});
+			}
+		}
+	}
+</script>
+<style>
+.page {
+	height: 100%;
+	background-color: #f8f8f8;
+}
+.scroll-view{
+	flex: 1;
+}
+</style>

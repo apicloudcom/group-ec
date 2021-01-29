@@ -1,0 +1,168 @@
+<template>
+    <view class="page">
+		<scroll-view class="scroll-view" scroll-y enable-back-to-top refresher-enabled refresher-triggered={refresherTriggered} onrefresherrefresh="onrefresherrefresh" onscrolltolower="onscrolltolower">
+			<tuan-item v-for="(item,index) in dataList" item={item} ontuan="ontuan"></tuan-item>
+			<no-data v-if={showNoData} image="../../images/common/nolist.png" desc="暂无拼单"></no-data>
+		</scroll-view>
+		<detail-spec v-if={showSpec} dataInfo={goodsInfo} action='btn3' spec={spec} buynum={buynum} oncloseSpec="oncloseSpec" onspecChange="onspecChange" onminusNum="onminusNum" onaddNum="onaddNum" onbtn3="oncantuan"></detail-spec>
+    </view>
+</template>
+<script>
+import $util from '../../utils/util.js'
+import UserCenter from '../../utils/user.js'
+import '../../components/detail/tuan-item.stml'
+import '../../components/detail/detail-spec.stml'
+import '../../components/no-data.stml'
+export default {
+	name: 'tuan',
+	data() {
+		return{
+			dataList: [],
+			page: 1,
+			haveMore: true,
+			loading: false,
+			refresherTriggered: false,
+			showNoData: false,
+
+			// 修改规格相关
+			tuanid: '',					//团购ID
+			id: '',     				//商品ID
+			goodsInfo: null,    //商品详情数据
+			spec: '',	        	//购买规格
+			buynum: 1,          //购买数量
+			showSpec: false    	//设置弹出规格
+		}
+	},
+	methods: {
+		apiready(){
+			this.data.id = api.pageParam.id;
+			$util.showProgress();
+			this.getData(false);
+		},
+		fnOpenDetails(e){
+			let id = e.detail.id;
+			$util.openWin({
+				name: 'detail-'+id,
+				url: '../details/details.stml',
+				title: '商品详情',
+				pageParam: {
+					id: id
+				}
+			});
+		},
+		// spec handler
+		oncloseSpec(){
+			this.data.showSpec = false;
+		},
+		onspecChange(e){
+			this.data.spec = e.detail.spec;
+		},
+		onminusNum(){
+			if (this.data.buynum > 1) {
+				this.data.buynum -= 1;
+			}
+		},
+		onaddNum(){
+			if (this.data.buynum < this.data.goodsInfo.ku_num) {
+				if (this.data.buynum < 20) {
+					this.data.buynum += 1;
+				} else {
+					$util.toast('添加数量已经达到上限');
+				}
+			}
+		},
+		oncantuan(){
+			if (UserCenter.isLogin()) {
+				let act = 'can';
+				let buynum = this.data.buynum;
+				let title = '立即购买';
+				let key = this.data.spec;
+				let id = api.pageParam.id;
+				$util.openWin({
+					name: 'ordert',
+					url: '../ordert/ordert.stml',
+					title: title,
+					pageParam: {
+						act: act,
+						goodsid: id,
+						buynum: buynum,
+						key: key,
+						tuanid: this.data.tuanid
+					}
+				});
+				this.data.showSpec = false;
+			} else {
+				$util.goLogin();
+			}
+		},
+		/**
+		 * 调起规格
+		 * */ 
+		ontuan(e){
+			this.data.tuanid = e.detail.id;
+			$util.showProgress();
+			$util.ajax({
+				url: 'homes/getGoodsByid?id='+api.pageParam.id
+			}, (res,err)=>{
+				if(res && res.errcode == 0){
+					let data = res.data;
+					
+					let guige = data.guige_data;
+					if (guige && guige.length > 0){
+						this.data.spec = guige[0].a;
+					}
+					
+					this.data.goodsInfo = res.data;
+					this.data.showSpec = true;
+				}
+				$util.hideProgress();
+			});
+		},
+		onrefresherrefresh(){
+			this.data.refresherTriggered = true;
+			this.getData(false);
+		},
+		onscrolltolower(){
+			if (this.data.haveMore && !this.data.loading) {
+				this.getData(true);
+			}
+		},
+		getData(loadMore){
+			let that = this;
+			if (!loadMore) {
+				that.data.page = 1;
+			}
+			this.data.loading = true;
+			var url = "homes/getGoodsTuan?id=" + that.data.id + "&page=" + that.data.page + "&limit=10";
+			$util.ajax({
+				url: url
+			}, function(res, err){
+				if (res && res.errcode == 0) {
+					let list = res.data;
+					that.data.haveMore = list.length > 0;
+					if (loadMore) {
+						that.data.dataList = that.data.dataList.concat(list);
+					} else {
+						that.data.dataList = list;
+					}
+					if (list.length > 0) {
+						that.data.page += 1;
+					}
+				}
+				that.data.loading = false;
+				that.data.refresherTriggered = false;
+				that.data.showNoData = that.data.dataList.length == 0;
+				$util.hideProgress();
+			});
+		}
+	}
+}
+</script>
+<style>
+.page {
+	height: 100%;
+}
+.scroll-view{
+	flex: 1;
+}
+</style>

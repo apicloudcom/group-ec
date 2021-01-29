@@ -1,0 +1,359 @@
+<template>
+	<view class="page">
+		<scroll-view class="scroll-view" v-if={odata} scroll-y>
+				<!-- 商品 -->
+				<view class="goods_box">
+					<order-goods dataList={[odata]} onitemClick="" onbtnClick=""></order-goods>
+				</view>
+				<!-- 申请原因 -->
+				<picker style="margin-top:8px;" mode="selector" range={twhy_arr} range-key="title" value={twhy} onchange="fnChooseTwhy">
+					<view class="yuanyin_box">
+						<text class="yuanyin_box_text">申请原因</text>
+						<text class="yuanyin_box_cont flex1 ellipsis_1">{whyStr||'请选择'}</text>
+						<image class="yuanyin_box_goto" src="../../images/main1/gor.png"></image>
+					</view>
+				</picker>
+				<!-- 上传凭证 -->
+				<view class="item_box">
+					<text class="title">{'上传凭证（'+thumbs.length+'/3）(选填)'}</text>
+					<view class="img_box">
+						<view class="img_one" v-for="(item,index) in thumbs">
+							<image class="image" style={'width:'+imgHeight+'px;height:'+imgHeight+'px;'} src={item} mode="aspectFill"></image>
+							<view class="del_img_box" onclick="del_image" data-index={index}>
+								<image class="del_img" src="../../images/main4/del_img.png"></image>
+							</view>
+						</view>
+						<view class="img_one add_img" onclick="fnChooseImage" v-if={thumbs.length < 3}>
+							<image class="image" style={'width:'+imgHeight+'px;height:'+imgHeight+'px;'} src="../../images/main4/add_img.png"></image>
+						</view>
+					</view>
+				</view>
+				<!-- 退款说明 -->
+				<view class="item_box">
+					<text class="title">退款说明（选填）</text>
+					<view class="shuoming_box">
+						<textarea id="content" class="content" placeholder="请输入退款说明" maxlength="500" oninput="insertInput"></textarea>
+						<text class="num color_22">{contentLength+'/500'}</text>
+					</view>
+				</view>
+		</scroll-view>
+		<text v-if={odata} class="btn" onclick="fnSubmitTui">提交</text>
+	</view>
+</template>
+<script>
+import $util from '../../utils/util.js'
+import '../../components/order-goods.stml'
+export default {
+	name: 'shouhou',
+	data() {
+		return{
+			odata: null,
+			ossinfo: null,
+			whyStr: '',
+			twhy: 0,
+			twhy_arr: [],
+			thumbs:[],
+			contentLength:0
+		}
+	},
+	computed:{
+		imgHeight(){
+			return Math.floor((api.winWidth - 4*15)/3);
+		}
+	},
+	methods: {
+		apiready(){
+			let id = '2dce8b40-d567-11ea-ac46-7dacf9e98a11';
+			let orderid = '202101131113318741';
+			this.fngetData(id, orderid);
+			// this.fngetData(api.pageParam.id, api.pageParam.orderid);
+		},
+		/***
+		 * 选择退货理由
+		 * */ 
+		fnChooseTwhy(e) {
+			let index = e.detail.value;
+			this.data.twhy = index;
+			this.data.whyStr = this.data.twhy_arr[index].title;
+		},
+		// 上传图片（选择图片或拍照）
+		fnChooseImage() {
+			var that = this;
+			if ($util.isMp()){
+				wx.chooseImage({
+					count: 1,
+					sizeType: ['original', 'compressed'],
+					sourceType: ['camera','album'],
+					success: function (res) {
+						that.data.thumbs.push(res.tempFilePaths[0]);
+					}
+				});
+			} else {
+				api.actionSheet({
+					title: '选择图片',
+					cancelTitle: '取消',
+					buttons: ['拍照', '相册']
+				}, function(ret, err) {
+					if (ret) {
+						var sourceTypes = ['camera', 'album'];
+						if (ret.buttonIndex == (sourceTypes.length + 1)) {
+							return;
+						}
+						var sourceType = sourceTypes[ret.buttonIndex - 1];
+						var permission = ret.buttonIndex == 1?'camera':'photos';
+						var resultList = api.hasPermission({
+							list: [permission]
+						});
+						if (resultList[0].granted) {
+							that.getPicture(sourceType);
+						} else {
+							api.confirm({
+								msg: '应用需要您的授权才能访问' + (permission=='camera'?'相机':'相册'),
+								buttons: ['取消', '去设置']
+							}, function(ret1) {
+								if (ret1.buttonIndex == 2) {
+									api.requestPermission({
+										list: [permission],
+									}, function(ret2) {
+										if (ret2.list[0].granted) {
+											that.getPicture(sourceType);
+										}
+									});
+								}
+							});
+						}
+					}
+				});
+			}
+        },
+        getPicture(sourceType) {
+            api.getPicture({
+                sourceType: sourceType,
+                encodingType: 'jpg',
+                allowEdit: true,
+                quality: 100,
+                targetWidth: 300,
+                targetHeight: 300
+            }, (ret, err)=> {
+                if (ret) {
+					this.data.thumbs.push(ret.data);
+                }
+            });
+        },
+		// 上传图片
+		fnUploadImage(path, callback) {
+            $util.ajax({
+                url: 'homes/upload',
+                method: 'post',
+                data: {
+                    values: {
+                        filename: 'icon.jpg'
+                    },
+                    files: {
+                        file: path
+                    }
+                }
+            }, (ret, err)=> {
+				if (ret && ret.data && ret.data.url) {
+					callback(true, ret.data.url);
+				} else {
+					callback(false);
+				}
+            });
+		},
+		// 删除图片
+		del_image(e) {
+			var index = e.currentTarget.dataset.index;
+			this.data.thumbs.splice(index, 1);
+		},
+		// 输入事件
+		insertInput(e) {
+			this.data.contentLength = e.detail.value.length;
+		},
+		/***
+		 * 获取退货数据
+		 * */ 
+		fngetData(id, orderid){
+			$util.ajax({
+				url: 'homes/getTinfo?id=' + id + '&orderid=' + orderid
+			}, (res, err)=>{
+				if (res){
+					if (res.errcode == 0) {
+						this.data.odata = res.data;
+						this.data.twhy_arr = res.twhy_arr;
+					} else {
+						$util.toast(res.msg);
+					}
+				} else {
+					$util.toast('网络错误');
+				}
+			})
+		},
+		fnSubmitTuiWithImages(images){
+			let postdata = {
+				id: api.pageParam.id,
+				orderid: api.pageParam.orderid,
+				type: 1,
+				why: this.data.whyStr,
+				content: document.getElementById('content').value,
+				tui_img: images
+			};
+			$util.ajax({
+				url: 'homes/torderAdd',
+				method: 'post',
+				data: {
+					body: postdata
+				}
+			}, (res,err)=>{
+				if (res){
+					if (res.errcode == 0) {
+						$util.openWin({
+							name: 'shouhou_ok',
+							url: '../shouhou_ok/shouhou_ok.stml',
+							title: '申请退款',
+							pageParam: {
+								id: res.tid
+							}
+						});
+					} else {
+						$util.toast(res.msg);
+					}
+				} else {
+					$util.toast('网络错误');
+				}
+			});
+		},
+		/***
+		 * 提交售后
+		 * */ 
+		fnSubmitTui() {
+			if (!this.data.whyStr) {
+				$util.toast('请选择售后原因~');
+				return;
+			}
+			
+			let promiseList = [];
+			for (var i=0; i<this.data.thumbs.length; i++){
+				let localPath = this.data.thumbs[i];
+				let promise = new Promise((resolve, reject) => {
+					this.fnUploadImage(localPath, (flag, url)=>{
+						if (flag) {
+							resolve(url);
+						} else {
+							reject('error');
+						}
+					});
+				}).then(res => res);
+				promiseList.push(promise);
+			}
+			if (promiseList.length > 0) {
+				Promise.all(promiseList)
+				.then(res => {this.fnSubmitTuiWithImages(res);})
+				.catch(e => {$util.toast('图片上传失败');})
+			} else {
+				this.fnSubmitTuiWithImages([]);
+			}
+		}
+	}
+}
+</script>
+<style>
+.page {
+	height: 100%;
+	background-color: #f8f8f8;
+}
+.scroll-view{
+	flex: 1;
+}
+/* 商品 */
+.goods_box{
+	background-color: white;
+}
+/* 选择原因 */
+.yuanyin_box{
+	flex-direction: row;
+    align-items: center;
+    padding: 0 15px;
+    background: #ffffff;
+	height: 56px;
+	margin-top: 5px;
+}
+.yuanyin_box_text{
+	font-size: 16px;
+	color: #333333;
+}
+.yuanyin_box_cont{
+    text-align: right;
+    padding-right: 3px;
+	font-size: 16px;
+	color: #979EA6;
+}
+.yuanyin_box_goto{
+    width: 10px;
+    height: 10px;
+}
+.flex1{
+	flex: 1;
+}
+/* 上传凭证 */
+.item_box{
+    margin-top: 15px;
+}
+.title{
+	margin-left: 15px;
+	margin-bottom: 4px;
+	font-size: 14px;
+	color: #6C7279;
+}
+.img_box{
+	flex-direction: row;
+    background: #ffffff;
+    padding: 15px 15px 15px 0;
+    box-sizing: border-box;
+}
+.image{
+	margin-left: 15px;
+}
+.del_img_box{
+	justify-content: center;
+	align-items: center;
+    width: 36px;
+    height: 36px;
+    position: absolute;
+    top: 0;
+	right: 0;
+}
+.del_img{
+	width: 16px;
+	height: 16px;
+}
+.shuoming_box{
+	padding: 15px 15px 5px;
+	background-color: white;
+}
+.content{
+    width: auto;
+    height: 75px;
+	font-size: 15px;
+	border: none;
+}
+.num{
+    text-align: right;
+	padding: 4px 0;
+	color: #cccccc;
+}
+.btn{
+    height: 45px;
+    border-radius: 4px;
+    font-weight:bold;
+    text-align: center;
+    line-height: 45px;
+    font-size: 16px;
+	color: white;
+	background-color: #ff6600;
+	margin: 15px;
+}
+.btn:active{
+	opacity: 0.7;
+}
+</style>

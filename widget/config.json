@@ -1,0 +1,44 @@
+{
+  "name": "root",
+  "hideNavigationBar": false,
+  "navigationBar": {
+    "background": "#fff",
+    "color": "#000",
+    "shadow": "#f1f1f1",
+    "hideBackButton": true
+  },
+  "tabBar": {
+    "scrollEnabled": false,
+    "background": "#fff",
+    "shadow": "#f1f1f1",
+    "color": "#aaa",
+    "selectedColor": "#339DFF",
+    "preload": 0,
+    "frames": [{
+      "name": "page1",
+      "url": "pages/main1/main1.stml",
+      "title": "拼团商城"
+    }, {
+      "name": "page2",
+      "url": "pages/main2/main2.stml",
+      "title": "分类"
+    }, {
+      "name": "page4",
+      "url": "pages/main4/main4.stml",
+      "title": "我的"
+    }],
+    "list": [{
+      "text": "首页",
+      "iconPath": "images/common/main1_1.png",
+      "selectedIconPath": "images/common/main1.png"
+    }, {
+      "text": "分类",
+      "iconPath": "images/common/main2_1.png",
+      "selectedIconPath": "images/common/main2.png"
+    }, {
+      "text": "我的",
+      "iconPath": "images/common/main4_1.png",
+      "selectedIconPath": "images/common/main4.png"
+    }]
+  }
+}

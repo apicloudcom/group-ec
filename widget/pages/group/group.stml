@@ -1,0 +1,216 @@
+<template>
+    <view class="page">
+		<view style="height:100%;" v-if={odata}>
+			<order-goods dataList={odata.buy_data} onitemClick="fnOpenDetails"></order-goods><!-- ulogo -->
+			<view class="ulogo_box">
+				<view class="ulogo_wrap">
+					<image mode="aspectFill" v-for="(item) in odata.tuanUser" class="ulogo" src={item.user.avatar}></image>
+					<image mode="aspectFill" v-for="(item) in cnumList" class="ulogo" src="../../images/main4/nopes.png"></image>
+				</view>
+				<view class="ulogo_zi_box" v-if={odata.cnum > 0}>
+					<text class="ulogo_zi">仅剩</text><text class="ulogo_n">{odata.cnum}</text><text class="ulogo_zi">个名额，</text><count-down time={odata.endmiao} style="font-size:14px;color:#333;"></count-down><text class="ulogo_zi"> 后结束</text>
+				</view>
+				<text class="ulogo_zi" v-else>拼团已满</text>
+			</view>
+			<view style="flex:1;"></view>
+			<text class="btn" onclick="onbtn">{odata.cnum > 0?('立即参与' + odata.tuanUser[0].user.nickname + '的拼单'):'一键发起拼单'}</text>
+		</view>
+		<detail-spec v-if={showSpec} dataInfo={goodsInfo} action='btn3' spec={spec} buynum={buynum} oncloseSpec="oncloseSpec" onspecChange="onspecChange" onminusNum="onminusNum" onaddNum="onaddNum" onbtn3="oncantuan"></detail-spec>
+    </view>
+</template>
+<script>
+import '../../components/order-goods.stml'
+import '../../components/count-down.stml'
+import '../../components/detail/detail-spec.stml'
+import $util from '../../utils/util';
+import UserCenter from '../../utils/user.js'
+export default {
+	name: 'group',
+	data() {
+		return{
+			odata: null,
+			tuanid: '',
+			uid: '',
+			cnumList: [],
+
+			// 修改规格相关
+			goodsInfo: null,    //商品详情数据
+			spec: '',	        //购买规格
+			buynum: 1,          //购买数量
+			showSpec: false    	//设置弹出规格
+		}
+	},
+	methods: {
+		apiready(){
+			this.data.tuanid = api.pageParam.tuanid;
+			this.data.uid = api.pageParam.uid;
+			this.fngetOrder();
+		},
+		// 获取拼团信息
+		fngetOrder(){
+			$util.ajax({
+				url: 'homes/orderTuan?id=' + this.data.tuanid
+			}, (res,err)=>{
+				if (res){
+					if (res.errcode == 0) {
+						let data = res.data;
+						this.data.odata = data;
+						if (data.cnum && data.cnum > 0) {
+							for (let i=0;i<data.cnum;i++) {
+								this.data.cnumList.push('');
+							}
+						}
+					} else {
+						$util.toast(res.msg);
+					}
+				} else {
+					$util.toast('网络错误');
+				}
+			});
+		},
+		/***
+		 * 商品详情
+		 * */ 
+		fnOpenDetails(e){
+			let id = this.data.odata.buy_data[e.detail.index].id;
+			$util.openWin({
+				name: 'detail-'+id,
+				url: '../details/details.stml',
+				title: '商品详情',
+				pageParam: {
+					id: id
+				}
+			});
+		},
+		/**
+		 * 调起规格
+		 * */ 
+		onbtn(e){
+			if (this.data.odata.cnum > 0) {
+				if (this.data.uid == UserCenter.getUserInfo().id) {
+					$util.toast('不能参加自己的团~');
+					return;
+				}
+			}
+			$util.showProgress();
+			$util.ajax({
+				url: 'homes/getGoodsByid?id='+this.data.odata.buy_data[0].id
+			}, (res,err)=>{
+				if(res && res.errcode == 0){
+					let data = res.data;
+					
+					let guige = data.guige_data;
+					if (guige && guige.length > 0){
+						this.data.spec = guige[0].a;
+					}
+					
+					this.data.goodsInfo = res.data;
+					this.data.showSpec = true;
+				}
+				$util.hideProgress();
+			});
+		},
+		// spec handler
+		oncloseSpec(){
+			this.data.showSpec = false;
+		},
+		onspecChange(e){
+			this.data.spec = e.detail.spec;
+		},
+		onminusNum(){
+			if (this.data.buynum > 1) {
+				this.data.buynum -= 1;
+			}
+		},
+		onaddNum(){
+			if (this.data.buynum < this.data.goodsInfo.ku_num) {
+				if (this.data.buynum < 20) {
+					this.data.buynum += 1;
+				} else {
+					$util.toast('添加数量已经达到上限');
+				}
+			}
+		},
+		oncantuan(){
+			if (UserCenter.isLogin()) {
+				let isCan = this.data.odata.cnum > 0;
+				let act = isCan?'can':'tuan';
+				let buynum = this.data.buynum;
+				if (act=='tuan' && buynum > 1) {
+					$util.toast('发起拼团商品每次只能购买一个~');
+					return;
+				}
+				let title = isCan?'立即购买':'发起拼团';
+				let key = this.data.spec;
+				let id = this.data.odata.buy_data[0].id;
+				$util.openWin({
+					name: 'ordert',
+					url: '../ordert/ordert.stml',
+					title: title,
+					pageParam: {
+						act: act,
+						goodsid: id,
+						buynum: buynum,
+						key: key,
+						tuanid: act=='can'?this.data.tuanid:''
+					}
+				});
+				this.data.showSpec = false;
+			} else {
+				$util.goLogin();
+			}
+		}
+	}
+}
+</script>
+<style>
+.page {
+	height: 100%;
+	background-color: #F6F6F6;
+}
+/* ulogo */
+.ulogo_box{
+	justify-content: center;
+	align-items: center;
+    height: 140px;
+	margin-top: 8px;
+	background-color: white;
+}
+.ulogo_wrap{
+	flex-direction: row;
+}
+.ulogo{
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    margin: 0 10px;
+}
+.ulogo_zi_box{
+	flex-direction: row;
+	align-items: center;
+	margin-top: 10px;
+}
+.ulogo_zi{
+    font-size: 14px;
+	color: #333333;
+}
+.ulogo_n{
+    font-size: 16px;
+    padding: 0 3px;
+	color: #FF7037;
+}
+.btn{
+    height: 45px;
+    border-radius: 4px;
+    font-weight:bold;
+    text-align: center;
+    line-height: 45px;
+    font-size: 16px;
+	margin: 0 15px 15px;
+	color: white;
+	background-color: #339DFF;
+}
+.btn:active{
+	opacity: 0.7;
+}
+</style>

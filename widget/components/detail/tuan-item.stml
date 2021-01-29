@@ -1,0 +1,71 @@
+<template>
+	<view class="tuan-item-main">
+		<image class="tuan-item-logo" src={this.props.item.user.avatar} mode="asepctFill"></image>
+		<text class="tuan-item-name">{this.props.item.user.nickname}</text>
+		<view style="flex:1;"></view>
+		<view class="tuan-item-info">
+			<view class="tuan-item-num-box"><text class="tuan-item-num-text">还差</text><text class="tuan-item-num">{this.props.item.cnum}</text><text class="tuan-item-num-text">人拼成</text></view>
+			<count-down time={this.props.item.endmiao} desc="剩余"></count-down>
+		</view>
+		<text class="tuan-item-btn" onclick="onclick">拼单</text>
+	</view>
+</template>
+<script>
+import '../count-down.stml'
+export default {
+	name: 'tuan-item',
+	methods: {
+		onclick(e){
+			this.fire('tuan', this.props.item);
+		}
+	}
+}
+</script>
+<style scoped>
+.tuan-item-main{
+	flex-direction: row;
+    align-items: center;
+	margin: 0 15px;
+    height: 62px;
+	border-bottom: 1px solid #f8f8f8;
+}
+.tuan-item-logo{
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+}
+.tuan-item-name{
+	color: #333333;
+    font-size: 14px;
+    margin-left: 10px;
+}
+.tuan-item-info{
+	align-items: center;
+	margin-right: 15px;
+}
+.tuan-item-num-box{
+	flex-direction: row;
+	justify-content: flex-end;
+}
+.tuan-item-num-text{
+    font-size: 12px;
+    color: #333333;
+}
+.tuan-item-num{
+    font-size: 12px;
+    color: #FF7037;
+	margin: 0 3px;
+}
+.tuan-item-btn{
+    width: 68px;
+    height: 32px;
+    border-radius: 2px;
+    text-align: center;
+    line-height: 32px;
+	color: white;
+	background-color: #339DFF;
+}
+.tuan-item-btn:active{
+	opacity: 0.7;
+}
+</style>

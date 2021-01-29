@@ -1,0 +1,102 @@
+<template>
+    <view class="page">
+		<view>
+			<view class="box" v-if={odata}>
+				<image class="logo" src={odata.image}></image>
+				<text class="name">{odata.title}</text>
+				<text class="version">{odata.ver}</text>
+				<text class="url">{odata.url}</text>
+			</view>
+		</view>
+		<view class="list_item" onclick="fnOpenPage">
+			<text class="list_zi">平台协议</text>
+			<image class="list_gor" src="../../images/main1/gor.png"></image>
+		</view>
+    </view>
+</template>
+<script>
+import $util from '../../utils/util.js'
+export default {
+	name: 'about',
+	data() {
+		return{
+			odata:null
+		}
+	},
+	methods: {
+		apiready(){
+			this.getData();
+		},
+		getData(){
+			$util.showProgress();
+			$util.ajax({
+				url: 'homes/about'
+			}, (ret,err)=>{
+				if (ret && ret.errcode == 0) {
+					this.data.odata = ret.data;
+				}
+				$util.hideProgress();
+			});
+		},
+		fnOpenPage(){
+			$util.openWin({
+				name: 'deal',
+				url: '../deal/deal.stml',
+				title: '平台协议'
+			})
+		}
+	}
+}
+</script>
+<style>
+.page {
+	height: 100%;
+	padding: 0 15px;
+	background-color: white;
+}
+.box{
+	align-items: center;
+	width: 100%;
+}
+.logo{
+    width: 100px;
+    height: 100px;
+    border-radius: 8px;
+	margin-top: 50px;
+	background-color: #c3c6cd;
+}
+.name{
+    font-size: 20px;
+    font-weight: bold;
+	margin-top: 10px;
+}
+.version{
+    font-size: 16px;
+    margin-top: 4px;
+	color: #666666;
+}
+.url{
+    font-size: 14px;
+    margin-top: 10px;
+	color: #999999;
+}
+.list_item{
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+	border-bottom: 1px solid #f8f8f8;
+	height: 44px;
+	margin-top: 20px;
+}
+.list_item:active{
+	opacity: 0.7;
+}
+.list_zi{
+    font-size: 16px;
+	color: #333333;
+}
+.list_gor{
+	width: 10px;
+	height: 10px;
+}
+</style>

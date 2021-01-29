@@ -1,0 +1,176 @@
+<template>
+    <view class="page">
+		<image class='ulogo' mode='aspectFill' src='' />
+		<text class='tips'>允许微信授权体验更多功能</text>
+		<button class='btn red' open-type="getUserInfo" ongetuserinfo="onGetUserInfo" lang="zh_CN" onclick="login">微信授权登录</button>
+		<button class='btn orange' onclick="simulateLogin">体验账号登录</button>
+    </view>
+</template>
+<script>
+import $util from '../../utils/util.js';
+import UserCenter from '../../utils/user.js';
+export default {
+	name: 'oauth',
+	data() {
+		return{
+
+		}
+	},
+	methods: {
+		apiready(){
+
+		},
+		login(){
+			if ($util.isApp()) {
+				this.wxLogin();
+			}
+		},
+		wxLogin(){
+			let that = this;
+			var wxPlus = api.require('wxPlus');
+			wxPlus.auth(function(ret, err) {
+				if (ret && ret.code) {
+					wxPlus.getToken({
+						code: ret.code
+					}, function(ret2, err) {
+						if (ret2 && ret2.accessToken && ret2.openId) {
+							wxPlus.getUserInfo({
+								accessToken: ret2.accessToken,
+								openId: ret2.openId
+							}, function(ret3, err) {
+								if (ret3 && ret3.openid) {
+									let sexArr = ['未知','男','女'];
+									that.loginWithData({
+										openid: ret3.openid,
+										userInfo: {
+											nickname: ret3.nickname,
+											sex: sexArr[ret3.sex],
+											avatar: ret3.headimgurl,
+											city: ret3.city||'',
+											country: ret3.country||'',
+											province: ret3.province||''
+										}
+									});
+								} else {
+									$util.toast('登录失败');
+								}
+							});
+						} else {
+							$util.toast('登录失败');
+						}
+					});
+				} else {
+					$util.toast('登录失败');
+				}
+			});
+		},
+		loginWithData(postData){
+			$util.ajax({
+				method:'post',
+				url:'members/oauth',
+				data:{
+					body:postData
+				}
+			}, function(ret, err){
+				if (ret) {
+					if (ret.status == 0) {
+						$util.toast('登录成功');
+						UserCenter.setUserInfo(ret.udata);
+						api.closeWin();
+					}
+				} else {
+					$util.toast('登录失败');
+				}
+			});
+		},
+		simulateLogin(){
+			let openid = 'testopenid';
+			// let openid = api.getPrefs({
+			// 	sync: true,
+			// 	key:'simulateopenid'
+			// });
+			if (!openid) {
+				openid = new Date().getTime();
+				api.setPrefs({
+					key: 'simulateopenid',
+					value: openid
+				});
+			}
+			$util.ajax({
+				method:'post',
+				url:'members/simulateOauth',
+				data:{
+					body:{openid}
+				}
+			}, function(ret, err){
+				if (ret) {
+					if (ret.status == 0) {
+						$util.toast('登录成功');
+						UserCenter.setUserInfo(ret.udata);
+						api.closeWin();
+					}
+				} else {
+					$util.toast('登录失败');
+				}
+			});
+		},
+		/**
+		 * 获取用户信息
+		 * */ 
+		onGetUserInfo(e) {
+			var that = this;
+			if (e.detail.errMsg == 'getUserInfo:ok') {
+				var result = e.detail;
+				wx.login({
+					success(res) {
+						if (res.errMsg == 'login:ok') {
+							that.loginWithData({code:res.code, userInfo:result.userInfo});
+						} else {
+							$util.toast('登录失败');
+						}
+					}
+				});
+			} else {
+				api.alert({
+					title: '警告',
+					msg: '若不授权微信登录，则无法正常使用小程序功能;点击重新授权，则可重新使用。'
+				});
+			}
+		}
+	}
+}
+</script>
+<style>
+.page {
+	align-items: center;
+	height: 100%;
+}
+.ulogo {
+    width: 87px;
+    height: 45px;
+    margin-top: 90px;
+}
+.tips {
+    text-align: center;
+    margin-top: 66px;
+    font-size: 15px;
+	color: #FE904A;
+}
+.btn {
+   	border: none;
+    font-size: 16px;
+    border-radius: 20px;
+    line-height: 40px;
+    margin-top: 20px;
+	color: white;
+}
+.btn:active{
+	opacity: 0.7;
+}
+.red{
+	background-color: #339DFF;
+}
+.orange{
+	background-color: #ffad00;
+}
+</style>

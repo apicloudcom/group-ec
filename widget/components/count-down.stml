@@ -1,0 +1,53 @@
+<template>
+	<text class="count-down-time" style={this.props.style?this.props.style:''}>{(this.props.desc||'')+time_str}</text>
+</template>
+<script>
+	export default {
+		name: 'count-down',
+		data(){
+			return {
+				time_str:''
+			}
+		},
+		methods: {
+			installed(){
+				this.countTime(this.props.time);
+			},
+			countTime(endtime, ms){
+				if (endtime <= 0) {
+					this.data.time_str = '00:00:00';
+					return;
+				}
+				// 倒计时
+				let dd = 0;
+				let hh = 0;
+				let mm = 0;
+				let ss = 0;
+				if (!ms) {ms = 9;}
+				let _endtime = parseInt(endtime) + 500;
+				hh = parseInt(_endtime / 3600 / 1000);
+				let _mm = _endtime - hh * 3600 * 1000;
+				mm = parseInt(_mm / 60 / 1000);
+				let _ss = _mm - mm * 1000 * 60;
+				ss = parseInt(_ss / 1000);
+				ms = parseInt(ms) - 1;
+				hh = hh < 10 ? '0' + hh : hh;
+				mm = mm < 10 ? '0' + mm : mm;
+				ss = ss < 10 ? '0' + ss : ss;
+				// let _str = hh + ':' + mm + ':' + ss + '.' + ms;
+				let _str = hh + ':' + mm + ':' + ss;
+				this.data.time_str = _str;
+				let interval = 1000;//100;
+				setTimeout(()=>{
+					this.countTime(endtime - interval, ms||9);
+				}, interval);
+			}
+		}
+	}
+</script>
+<style scoped>
+.count-down-time{
+    font-size: 11px;
+	color: #333333;
+}
+</style>

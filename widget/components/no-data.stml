@@ -1,0 +1,42 @@
+<template>
+    <view class="-no-data-box">
+        <view class="-no-data-content-box">
+            <image class="-no-data-img" src={this.props.image}></image>
+            <text class="-no-data-desc">{this.props.desc}</text>
+            <text class="-no-data-refresh-btn" v-if={this.props.showRefresh} onclick="onclick">刷新</text>
+        </view>
+    </view>
+</template>
+<script>
+	export default {
+		name: 'no-data',
+		methods: {
+            onclick(){
+                this.fire('refresh');
+            }
+		}
+	}
+</script>
+<style scoped>
+.-no-data-box{
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+.-no-data-content-box{
+    align-items: center;
+    padding-bottom: 44px;
+}
+.-no-data-img{
+    width: 135px;
+    height: 135px;
+}
+.-no-data-desc{
+    font-size: 12px;
+    color: #798391;
+}
+.-no-data-refresh-btn{
+    font-size: 14px;
+    color: #FE5C00;
+}
+</style>

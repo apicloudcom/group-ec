@@ -1,0 +1,276 @@
+<template name='tpl'>
+    <view class="page">
+		<view class="a_box">
+			<view class="a_one">
+				<text class="a_zi">收货人</text>
+				<input class="a_int" id="name" placeholder="请填写收货人" value={name} maxlength="20" oninput="insertInput"></input>
+			</view>
+			<view class="a_one">
+				<text class="a_zi">联系方式</text>
+				<input class="a_int" id="phone" placeholder="请填写联系方式" value={phone} keyboard-type="number" maxlength="11" oninput="insertInput" ></input>
+			</view>
+			<view class="a_one">
+				<text class="a_zi">收货地址</text>
+				<view class="qu_box">
+					<region-picker region={qustr||''} onchange="fnChooseStr"></region-picker>
+					<!-- <picker class="a_picker" mode="region" value={qustr.split(',')} onchange="fnChooseStr">
+						<text style={'color:'+(qustr?'#333;':'#ccc;')}>{qustr || '请选择'}</text>
+					</picker> -->
+					<image class="a_gor" src="../../images/main1/gor.png"></image>
+				</view>
+			</view>
+			<view class="a_one">
+				<text class="a_zi">设为默认地址</text>
+				<switch checked={def} color="#339DFF" onchange={this.onswitchchange}/>
+			</view>
+		</view>
+		<!-- 备注 -->
+		<text class="bei_zi">详细地址</text>
+		<view class="bei_box">
+			<textarea class="bei_area" id="address" placeholder="街道、门牌号等" oninput="insertInput" value={address}></textarea>
+		</view>
+
+		<!-- btn -->
+		<view class="flex1"></view>
+		<view class="footer">
+			<text v-if={api.pageParam.id} class="btn btn_orange" onclick="fnSubmit">保存</text>
+			<text v-if={api.pageParam.id} class="btn btn_red" onclick="fnDelete">删除</text>
+			<text v-if={!api.pageParam.id} class="btn btn_red" onclick="fnSubmit">提交</text>
+		</view>
+    </view>
+</template>
+<script>
+import $util from '../../utils/util.js'
+import '../../components/region-picker.stml'
+export default {
+	name: 'address_edit',
+	data() {
+		return{
+			name: '',
+			phone: '',
+			qustr: api.pageParam.qustr||'',
+			quid: '',
+			address: '',
+			def: false
+		}
+	},
+	methods: {
+		apiready(){
+			let pageParam = api.pageParam;
+			if (pageParam && pageParam.id) {
+				this.data.name = pageParam.name;
+				this.data.phone = pageParam.phone;
+				this.data.quid = pageParam.quid;
+				this.data.qustr = pageParam.qustr;
+				this.data.address = pageParam.address;
+				this.data.def = pageParam.def;
+			}
+		},
+		insertInput(e){
+			let id = e.currentTarget.attributes.id;
+			let value = e.detail.value;
+			if (id == 'name') {
+				this.data.name = value;
+			} else if (id == 'phone') {
+				this.data.phone = value;
+			} else if (id == 'address') {
+				this.data.address = value;
+			}
+			
+		},
+		fnChooseStr(e){
+			let code = e.detail.code;
+			let val = e.detail.value;
+			this.data.quid = code.join(",");
+			this.data.qustr = val.join(",");
+
+		},
+		onswitchchange(e){
+			this.data.def = e.detail.value;
+		},
+        isMobile(str) {
+            var mobileReg = /^1(3[0-9]|4[0-9]|5[0-9]|6[0-9]|7[0-9]|8[0-9]|9[0-9])\d{8}$/;
+            return mobileReg.test(str);
+        },
+		fnSubmit(){
+			let name = this.data.name;
+			let phone = this.data.phone;
+			let quid = this.data.quid;
+			let qustr = this.data.qustr;
+			let address = this.data.address;
+			let def = this.data.def;
+			if (!name) {
+				$util.toast('请输入姓名~');
+				return;
+			}
+			if (name.length > 14) {
+				$util.toast('收货人姓名不得超过14个字符~');
+				return;
+			}
+			if (name.length < 2) {
+				$util.toast('收货人姓名不得少于2个字符~');
+				return;
+			}
+			if (!phone) {
+				$util.toast('请输入联系方式~');
+				return;
+			}
+			if (!this.isMobile(phone)) {
+				$util.toast('请输入正确的手机号~');
+				return;
+			}
+			if (!qustr) {
+				$util.toast('请选择收货地址~');
+				return;
+			}
+			if (!address) {
+				$util.toast('请输入详细地址~');
+				return;
+			}
+			if (address.length > 50) {
+				$util.toast('详细地址不得超过50个字符~');
+				return;
+			}
+			let url = api.pageParam.id?'homes/addRessEdit':'homes/addressPush';
+			let postdata = {name, phone, quid, qustr, address, def};
+			postdata.uid = api.pageParam.uid;
+			postdata.id = api.pageParam.id;
+			$util.ajax({
+				url: url,
+				method: 'post',
+				data: {
+					body: postdata
+				}
+			}, (res,err)=>{
+				if (res){
+					$util.toast(res.msg);
+					if (res.errcode == 0) {
+						let from = api.pageParam.from;
+						if (from && from == 'order') {
+							api.sendEvent({
+								name: 'useraddress',
+								extra: postdata
+							});
+						}
+
+						setTimeout(function(){
+							api.closeWin();
+						}, 300);
+					}
+				} else {
+					$util.toast('网络错误');
+				}
+			});
+		},
+		fnDelete(){
+			api.confirm({
+				msg: '是否删除地址？'
+			},function(ret){
+				if (ret.buttonIndex == 2) {
+					$util.ajax({
+						url: 'homes/addRessDel?id=' + api.pageParam.id
+					}, (res,err)=>{
+						if (res){
+							$util.toast(res.msg);
+							if (res.errcode == 0) {
+								setTimeout(function(){
+									api.closeWin();
+								}, 300);
+							}
+						} else {
+							$util.toast('网络错误');
+						}
+					});
+				}
+			});
+		}
+	}
+}
+</script>
+<style>
+.page {
+	height: 100%;
+	background-color: #f6f6f6;
+}
+.a_box{
+	padding: 0 15px;
+	background-color: white;
+}
+.a_one{
+	flex-direction: row;
+	justify-content: space-between;
+    align-items: center;
+    height: 51px;
+	border-top: 1px solid #f8f8f8;
+}
+.a_zi{
+    font-size: 16px;
+	color: #333333;
+}
+.a_int{
+    width: 210px;
+    height: 30px;
+    text-align: right;
+	color: #333333;
+	border: none;
+}
+.qu_box{
+	flex-direction: row;
+	align-items: center;
+}
+.a_picker{
+	flex-direction: row;
+	justify-content: flex-end;
+	align-items: center;
+}
+.a_gor{
+    width: 10px;
+    height: 10px;
+    margin-left: 8px;
+}
+/* 备注 */
+.bei_zi{
+    font-size: 14px;
+	margin: 15px 15px 4px;
+	color: #6C7279;
+}
+.bei_box{
+    height: 122px;
+    box-sizing: border-box;
+    padding: 15px;
+	background-color: white;
+}
+.bei_area{
+	width: 100%;
+	height: 100%;
+	border: none;
+}
+.flex1{
+	flex: 1;
+}
+/* btn */
+.footer{
+	flex-direction: row;
+	padding: 15px;
+}
+.btn{
+	flex: 1;
+    height: 45px;
+    border-radius: 4px;
+    font-weight:bold;
+    text-align: center;
+    line-height: 45px;
+    font-size: 16px;
+	color: white;
+}
+.btn:active{
+	opacity: 0.7;
+}
+.btn_orange{
+	background-color: #339DFF;
+	margin-right: 15px;
+}
+.btn_red{
+	background-color: #ff6600;
+}
+</style>

@@ -1,0 +1,347 @@
+<template>
+    <view class="page">
+		<!-- header -->
+		<view class="safe-area" style={'padding-top:' + statusBarHeight + 'px;'}>
+			<view class="header">
+				<text class="header_title">我的</text>
+			</view>
+		</view>
+		<scroll-view class="scroll-view" scroll-y>
+			<!-- 用户信息 -->
+			<view class="user_box" onclick="fnOpenUserInfoPage">
+				<image class="user_bg" src="../../images/main4/bg_2.png"></image>
+				<view class="user_wrap">
+					<image class="user_logo" src={udata?udata.avatar:''} mode="aspectFill"></image>
+					<text class="user_name">{udata?udata.nickname:'您还未登录，去登录'}</text>
+					<image class="user_gor" src="../../images/main4/gor2.png"></image>
+				</view>
+			</view>
+			<view class="content_box">
+				<!-- 我的订单 -->
+				<view class="content_item_box">
+					<view class="title_box" onclick="fnOpenOrderListPage">
+						<text class="title_zi">我的订单</text>
+						<image class="title_gor" src="../../images/main1/gor.png"></image>
+					</view>
+					<view class="user_btn_box">
+						<view class="user_btn" v-for="(item,index) in navOrderList" data-type={item.type} onclick="fnOpenPage">
+							<image class="btn_icon" src={item.icon}></image>
+							<text class="btn_zi">{item.title}</text>
+							<text class="user_red" v-if={this.redDot(item.type) > 0}>{this.redDot(item.type)}</text>
+						</view>
+					</view>
+				</view>
+				<!-- menu -->
+				<view class="content_item_box">
+					<view class="menu_item_box" v-for="(item,index) in navMenuList" data-url={item.url} data-title={item.title} data-needLogin={item.needLogin} onclick="fnOpenMenuDetailPage">
+						<text class="title_menu_zi">{item.title}</text>
+						<image class="title_gor" src="../../images/main1/gor.png"></image>
+					</view>
+				</view>
+			</view>
+		</scroll-view>
+    </view>
+</template>
+<script>
+import $util from '../../utils/util.js'
+import UserCenter from '../../utils/user.js'
+export default {
+	name: 'main4',
+	data() {
+		return{
+			udata: null,
+			ordernum: {
+				notuan: 0,
+				nosend: 0,
+				noput: 0
+			},
+			navOrderList: [{
+				icon: '../../images/main4/order_1.png',
+				title: '待成团',
+				type: 2
+			},{
+				icon: '../../images/main4/order_2.png',
+				title: '待发货',
+				type: 3
+			},{
+				icon: '../../images/main4/order_3.png',
+				title: '待收货',
+				type: 4
+			},{
+				icon: '../../images/main4/order_4.png',
+				title: '已完成',
+				type: 5
+			},{
+				icon: '../../images/main4/order_5.png',
+				title: '售后',
+				type: 0
+			}],
+			navMenuList: [
+			{
+				title: '收货地址',
+				url: '../address/address.stml',
+				needLogin: true
+			},{
+				title: '关于我们',
+				url: '../about/about.stml',
+				needLogin: false
+			}]
+		}
+	},
+	computed:{
+		statusBarHeight(){
+			if ($util.isApp()) {
+				return api.safeArea.top;
+			} else {
+				const res = wx.getSystemInfoSync();
+				let statusBarHeight = res.statusBarHeight;
+				return statusBarHeight<50?statusBarHeight:0;
+			}
+		}
+	},
+	methods: {
+		apiready(){
+			this.data.udata = UserCenter.getUserInfo();
+			this.setStatusBarStyle('light');
+		},
+		onShow(){
+			this.setStatusBarStyle('light');
+			this.getUserInfo();
+		},
+		onHide(){
+			this.setStatusBarStyle('dark');
+		},
+		setStatusBarStyle(style){
+			if ($util.isApp()) {
+				api.setStatusBarStyle({
+					style: style,
+					animated: false
+				});
+			}
+		},
+		redDot(type){
+			if (type == 2) {
+				return this.data.ordernum.notuan;
+			} else if (type == 3) {
+				return this.data.ordernum.nosend;
+			} else if (type == 4) {
+				return this.data.ordernum.noput;
+			}
+			return 0;
+		},
+		getUserInfo(){
+			if (UserCenter.isLogin()) {
+				$util.ajax({
+					url: 'homes/getUserInfo'
+				}, (ret,err)=>{
+					if (ret && ret.errcode == 0) {
+						this.data.udata = ret.data;
+					}
+				});
+				$util.ajax({
+					url: 'homes/getUserOrdernum'
+				}, (ret,err)=>{
+					if (ret && ret.errcode == 0) {
+						this.data.ordernum = ret.data;
+					}
+				});
+			} else {
+				this.data.udata = null;
+				this.data.ordernum = {
+					nopay: 0,
+					nosend: 0,
+					noput: 0
+				};
+			}
+		},
+		fnOpenUserInfoPage(){
+			if (UserCenter.isLogin()) {
+				this.openWin({
+					name: 'user',
+					url: '../user/user.stml',
+					title: '个人资料'
+				});
+			} else {
+				$util.goLogin();
+			}
+		},
+		fnOpenOrderListPage(){
+			if (UserCenter.isLogin()) {
+				this.openWin({
+					name: 'order_list',
+					url: '../order_list/order_list.stml',
+					title: '我的订单'
+				});
+			} else {
+				$util.goLogin();
+			}
+		},
+		fnOpenPage(e){
+			if (UserCenter.isLogin()) {
+				let type = e.currentTarget.dataset.type;
+				if (type == 0) {
+					this.openWin({
+						name: 'shouhou_list',
+						url: '../shouhou_list/shouhou_list.stml',
+						title: '售后'
+					});
+				} else {
+					this.openWin({
+						name: 'order_list',
+						url: '../order_list/order_list.stml',
+						title: '我的订单',
+						pageParam: {
+							type: type
+						}
+					});
+				}
+			} else {
+				$util.goLogin();
+			}
+		},
+		fnOpenMenuDetailPage(e){
+			let dataset = e.currentTarget.dataset;
+			let url = dataset.url;
+			let needLogin = dataset.needLogin;
+			if (needLogin && !UserCenter.isLogin()) {
+				$util.goLogin();
+				return;
+			}
+			this.openWin({
+				name: dataset.title,
+				url: url,
+				title: dataset.title,
+				slidBackType: 'edge'
+			});
+		},
+		openWin(param){
+			this.setStatusBarStyle('dark');
+			$util.openWin(param);
+		}
+	}
+}
+</script>
+<style>
+.page {
+	height: 100%;
+	background-color: #f8f8f8;
+}
+.safe-area{
+	background-image: linear-gradient(to bottom, #0093ffee, #0c97ffee);
+}
+.header{
+	justify-content: center;
+    align-items: center;
+    height: 44px;
+}
+.header_title{
+    font-size: 17px;
+	font-weight: 500;
+    color: white;
+}
+.scroll-view{
+	flex: 1;
+}
+.user_box{
+    height: 126px;
+}
+.user_bg{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+.user_wrap{
+	flex-direction: row;
+	align-items: center;
+    height: 60px;
+}
+.user_logo{
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+	margin-left: 20px;
+	background-color: #f8f8f8;
+}
+.user_name{
+	flex: 1;
+    font-size: 17px;
+    color: white;
+	margin: 0 15px;
+}
+.user_gor{
+    width: 16px;
+    height: 16px;
+    margin-right: 20px;
+}
+.content_box{
+	margin: 0 15px;
+	top: -40px;
+}
+.content_item_box{
+    border-radius: 4px;
+	background-color: white;
+	margin-bottom: 10px;
+	padding: 0 10px;
+}
+/* order */
+.title_box{
+	flex-direction: row;
+	justify-content: space-between;
+    align-items: center;
+	border-bottom: 1px solid #f8f8f8;
+    height: 40px;
+}
+.title_gor{
+    width: 10px;
+    height: 10px;
+}
+.title_zi{
+    font-size: 14px;
+    color: #333333;
+    font-weight: bold;
+}
+.user_btn_box{
+	flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    height: 72px;
+}
+.user_btn{
+	align-items: center;
+}
+.btn_icon{
+    width: 24px;
+    height: 24px;
+}
+.btn_zi{
+    font-size: 12px;
+    color: #333333;
+}
+.user_red{
+	position: absolute;
+	height: 12px;
+	line-height: 12px;
+	text-align: center;
+	font-size: 11px;
+	background-color: red;
+	color: #FFF;
+	border-radius: 6px;
+	right: 0;
+	top: -6px;
+	padding: 0 3px;
+}
+.menu_item_box{
+	flex-direction: row;
+	justify-content: space-between;
+    align-items: center;
+	border-bottom: 1px solid #f8f8f8;
+    height: 49px;
+}
+.menu_item_box:active{
+	opacity: 0.7;
+}
+.title_menu_zi{
+    font-size: 14px;
+    color: #333333;
+}
+</style>

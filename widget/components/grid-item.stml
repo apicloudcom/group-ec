@@ -1,0 +1,48 @@
+<template>
+	<view class="-grid-item" style={'width:'+this.props.width+'px;height:'+(this.props.width*0.75+80)+'px;'} onclick="onclick">
+		<image class="-grid-item-img" style={'height:'+(this.props.width*0.75)+'px;'} src={this.props.item.image} mode="aspectFill"></image>
+		<text class="-grid-item-title">{this.props.item.title}</text>
+		<text class="-grid-item-price">{'￥' + this.props.item.price}</text>
+	</view>
+</template>
+<script>
+	export default {
+		name: 'grid-item',
+		methods: {
+            onclick(){
+                this.fire('itemClick', this.props.item);
+            }
+		}
+	}
+</script>
+<style scoped>
+.-grid-item{
+    margin-bottom: 5px;
+	margin-right: 12px;
+    border-radius: 8px;
+	border: 1px solid #f6f6f6;
+	border-bottom: 3px solid #f6f6f6;
+	box-sizing: border-box;
+}
+.-grid-item-img{
+	width: 100%;
+}
+.-grid-item-title{
+    line-height: 20px;
+    height: 40px;
+	margin: 5px 12px 0;
+    color: #333333;
+    font-weight: bold;
+    text-overflow: ellipsis;
+    white-space: normal;
+	overflow: hidden;
+	-webkit-line-clamp: 2;
+}
+.-grid-item-price{
+	margin-left: 12px;
+	height: 35px;
+    line-height: 35px;
+    font-weight: 500;
+    color: #FE5C00;
+}
+</style>

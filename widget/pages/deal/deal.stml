@@ -1,0 +1,59 @@
+<template>
+    <scroll-view class="page" scroll-y>
+		<view class="html_box" v-if={html1}>
+			<rich-text nodes={html1}></rich-text>
+		</view>
+		<view class="html_box" v-if={html2}>
+			<rich-text nodes={html2}></rich-text>
+		</view>
+    </scroll-view>
+</template>
+<script>
+import $util from '../../utils/util.js'
+export default {
+	name: 'deal',
+	data() {
+		return{
+			html1: '',
+			html2: ''
+		}
+	},
+	methods: {
+		apiready(){
+			this.getData();
+		},
+		getData(){
+			$util.showProgress();
+			$util.ajax({
+				url: 'homes/about'
+			}, (ret,err)=>{
+				if (ret && ret.errcode == 0) {
+					let data = ret.data;
+					this.data.html1 = data.regcontent;
+					this.data.html2 = data.yinsicontent;
+				}
+				$util.hideProgress();
+			});
+		},
+		fnOpenPage(){
+			$util.openWin({
+				name: 'deal',
+				url: '../deal/deal.stml',
+				title: '平台协议'
+			})
+		}
+	}
+}
+</script>
+<style>
+.page{
+	height: 100%;
+    background-color: #F8F8F8;
+}
+.html_box{
+    margin: 15px 15px 0;
+    background-color: #FFFFFF;
+    border-radius: 4px;
+    padding: 15px;
+}
+</style>

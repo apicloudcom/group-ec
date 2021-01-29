@@ -49,7 +49,7 @@
 
 感谢关注本项目，如果觉得对您有帮助，希望给个 star 鼓励一下。
 
-如需进一步了解技术细节和实现，请参阅 docs 目录下的[《源码解析文档》](https://github.com/apicloudcom/group-ec/tree/main/docs)。
+如需进一步了解技术细节和实现，请参阅 docs 目录下的[《源码解析文档》](https://github.com/apicloudcom/group-ec/tree/master/docs)。
 
 ## License
 

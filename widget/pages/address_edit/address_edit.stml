@@ -3,11 +3,11 @@
 		<view class="a_box">
 			<view class="a_one">
 				<text class="a_zi">收货人</text>
-				<input class="a_int" id="name" placeholder="请填写收货人" value={name} maxlength="20" oninput="insertInput"></input>
+				<input class="a_int" data-id="name" placeholder="请填写收货人" value={name} maxlength="20" oninput="insertInput"></input>
 			</view>
 			<view class="a_one">
 				<text class="a_zi">联系方式</text>
-				<input class="a_int" id="phone" placeholder="请填写联系方式" value={phone} keyboard-type="number" maxlength="11" oninput="insertInput" ></input>
+				<input class="a_int" data-id="phone" placeholder="请填写联系方式" value={phone} keyboard-type="number" maxlength="11" oninput="insertInput" ></input>
 			</view>
 			<view class="a_one">
 				<text class="a_zi">收货地址</text>
@@ -27,7 +27,7 @@
 		<!-- 备注 -->
 		<text class="bei_zi">详细地址</text>
 		<view class="bei_box">
-			<textarea class="bei_area" id="address" placeholder="街道、门牌号等" oninput="insertInput" value={address}></textarea>
+			<textarea class="bei_area" data-id="address" placeholder="街道、门牌号等" oninput="insertInput" value={address}></textarea>
 		</view>
 
 		<!-- btn -->
@@ -67,7 +67,7 @@ export default {
 			}
 		},
 		insertInput(e){
-			let id = e.currentTarget.attributes.id;
+			let id = e.currentTarget.dataset.id;
 			let value = e.detail.value;
 			if (id == 'name') {
 				this.data.name = value;
@@ -76,14 +76,12 @@ export default {
 			} else if (id == 'address') {
 				this.data.address = value;
 			}
-			
 		},
 		fnChooseStr(e){
 			let code = e.detail.code;
 			let val = e.detail.value;
 			this.data.quid = code.join(",");
 			this.data.qustr = val.join(",");
-
 		},
 		onswitchchange(e){
 			this.data.def = e.detail.value;

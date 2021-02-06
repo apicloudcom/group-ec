@@ -90,12 +90,12 @@ export default {
 	},
 	computed:{
 		statusBarHeight(){
-			if ($util.isApp()) {
-				return api.safeArea.top;
-			} else {
+			if ($util.isMp()) {
 				const res = wx.getSystemInfoSync();
 				let statusBarHeight = res.statusBarHeight;
 				return statusBarHeight<50?statusBarHeight:0;
+			} else {
+				return api.safeArea.top;
 			}
 		}
 	},

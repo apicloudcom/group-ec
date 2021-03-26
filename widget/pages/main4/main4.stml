@@ -6,7 +6,7 @@
 				<text class="header_title">我的</text>
 			</view>
 		</view>
-		<scroll-view class="scroll-view" scroll-y>
+		<scroll-view class="scroll-view" scroll-y bounces={false}>
 			<!-- 用户信息 -->
 			<view class="user_box" onclick="fnOpenUserInfoPage">
 				<image class="user_bg" src="../../images/main4/bg_2.png"></image>

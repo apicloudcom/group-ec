@@ -1,7 +1,7 @@
 <template>
 	<view class="-list-item" data-id={this.props.item.id} onclick="onclick">
 		<!-- <view class="-list-item-banner-box"}> -->
-			<swiper style={'height:'+listSwiperHeight+'px;'} indicator-dots indicator-color="rgba(255,255,255,0.4)" circular>
+			<swiper class="-list-item-swiper" style={'height:'+listSwiperHeight+'px;'} indicator-dots indicator-color="rgba(255,255,255,0.4)" circular>
 				<swiper-item v-for="(item_, index_) in this.props.item.images_show">
 					<image class="-list-item-banner-img" src={item_} mode="aspectFill"></image>
 				</swiper-item>
@@ -59,6 +59,10 @@
 }
 .-list-item:active{
     opacity: 0.8;
+}
+.-list-item-swiper{
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
 }
 .-list-item-banner-img{
     width: 100%;

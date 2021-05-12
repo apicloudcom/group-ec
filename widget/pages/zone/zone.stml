@@ -79,6 +79,7 @@
 <style>
 .page {
 	height: 100%;
+	background-color: #f8f8f8;
 }
 .scroll-view{
 	flex: 1;

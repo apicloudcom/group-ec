@@ -101,7 +101,9 @@ export default {
 	},
 	methods: {
 		apiready(){
-			this.data.udata = UserCenter.getUserInfo();
+			if (UserCenter.isLogin()) {
+				this.data.udata = UserCenter.getUserInfo();
+			}
 			this.setStatusBarStyle('light');
 		},
 		onShow(){
